@@ -9,7 +9,7 @@ const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 let DATA = {activitats: []};
 const TEACHER = new URLSearchParams(location.search).has("professorat");
 // Adreça de l'aplicació web de Google Apps Script de la biblioteca (Implementa → Aplicació web).
-const URL_BIBLIOTECA = "";
+const URL_BIBLIOTECA = "https://script.google.com/macros/s/AKfycbwZJIcfAZKnd643SiQGJ8QGiqKCiZmtLBSLhsy7a1rJAxxDKQpygDnU73naST_d7LMM/exec";
 const K_DRAFT = "ea-meves-activitats", K_CODI = "ea-codi-biblioteca", K_AUTOR = "ea-autor";
 let SHARED = false;   // true quan la pàgina s'obre amb un enllaç d'activitat (#a=...)
 function llegirLocal(k){ try { return localStorage.getItem(k) || ""; } catch (e) { return ""; } }

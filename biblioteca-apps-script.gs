@@ -3,21 +3,38 @@
  * ---------------------------------------------------------
  * Desa i llegeix les activitats que comparteix el professorat en una carpeta de Google Drive.
  *
- * 1. Crea una carpeta a Drive (p. ex. «Biblioteca entrenament auditiu») i enganxa aquí
- *    el seu identificador: drive.google.com/drive/folders/XXXXXXXX → XXXXXXXX
- * 2. Tria el codi del professorat. Només qui el sàpiga podrà compartir i veure propostes.
+ * 1. Tria el codi del professorat. Només qui el sàpiga podrà compartir i veure propostes.
+ * 2. Executa una vegada la funció «configurar» (crea la carpeta a Drive i demana permís).
+ *    Si ja tens una carpeta, pots enganxar-ne l'identificador a CARPETA_ID.
  * 3. Implementa → Nova implementació → Aplicació web
  *      · Executa com a: jo
  *      · Qui hi té accés: qualsevol usuari
  *    i copia l'adreça que acaba en /exec a URL_BIBLIOTECA (app.js).
  */
-const CARPETA_ID = 'ENGANXA_AQUI_LID_DE_LA_CARPETA';
+const CARPETA_ID = '';   // buit: es fa servir la carpeta que crea «configurar»
 const CODI = 'rockin';
+
+function carpetaBiblioteca() {
+  if (CARPETA_ID) return DriveApp.getFolderById(CARPETA_ID);
+  const props = PropertiesService.getScriptProperties();
+  let id = props.getProperty('CARPETA_ID');
+  if (!id) {
+    id = DriveApp.createFolder('Biblioteca Entrenament auditiu · Rockin').getId();
+    props.setProperty('CARPETA_ID', id);
+  }
+  return DriveApp.getFolderById(id);
+}
+
+// Executa-la una vegada des de l'editor: crea la carpeta i demana els permisos.
+function configurar() {
+  const c = carpetaBiblioteca();
+  Logger.log('Carpeta de la biblioteca: ' + c.getUrl());
+}
 
 function doGet(e) {
   const p = e.parameter || {};
   if (p.codi !== CODI) return resposta({ ok: false, error: 'codi' });
-  const carpeta = DriveApp.getFolderById(CARPETA_ID);
+  const carpeta = carpetaBiblioteca();
 
   // Obrir una activitat concreta
   if (p.id) {
@@ -51,7 +68,7 @@ function doPost(e) {
   const lock = LockService.getScriptLock();
   lock.waitLock(20000);
   try {
-    const carpeta = DriveApp.getFolderById(CARPETA_ID);
+    const carpeta = carpetaBiblioteca();
     const nom = String(dades.nom).replace(/[\\/:*?"<>|]+/g, '-').slice(0, 120) + '.json';
     const contingut = JSON.stringify(a);
     const existents = carpeta.getFilesByName(nom);
