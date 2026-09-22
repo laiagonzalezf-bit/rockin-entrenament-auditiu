@@ -1,0 +1,73 @@
+{
+  "activitats": [
+    {
+      "id": "entrenament-auditiu",
+      "title": "Entrenament auditiu",
+      "instructions": "Escolta els fragments musicals en l'ordre que vulguis, llegeix bé les descripcions i arrossega cada vídeo a la descripció que li correspon.",
+      "feedback": "Enhorabona! Has relacionat correctament totes les cançons.",
+      "hideVideo": true,
+      "items": [
+        {
+          "id": "c1",
+          "video": "https://www.youtube.com/watch?v=lpTGUFuEOQw",
+          "start": "0:00",
+          "end": "",
+          "desc": "La cançó comença amb un tic tac de rellotge com a efecte sonor, i entra la veu masculina amb un teclat/sintetitzador alhora. \nDesprés de la primera roda entra la bateria i altres efectes. La velocitat és moderada. A la tornada hi ha cors, i el cantant respon just després com si fessin pregunta/resposta.",
+          "title": "De Bonesh — Oques Grasses",
+          "extra": "",
+          "extraVideos": []
+        },
+        {
+          "id": "c2",
+          "video": "https://www.youtube.com/watch?v=lWA2pjMjpBs",
+          "start": "0:00",
+          "end": "",
+          "desc": "Hi ha una introducció de piano i veu femenina: la veu entra just després de cada acord. Tot seguit, entra la bateria, portant la pulsació amb el bombo. La velocitat és moderada i no sembla tenir molts acords. El patró de bateria es va complicant, perquè es va omplint més a cada ronda. No hi ha guitarra. A la tornada s’escolten unes cordes, com violins. Quan s’acaba la tornada, es torna a “buidar” la instrumentació.",
+          "title": "Diamonds — Rihanna",
+          "extra": "",
+          "extraVideos": []
+        },
+        {
+          "id": "c3",
+          "video": "https://www.youtube.com/watch?v=DC2S9hBMqFQ",
+          "start": "0:00",
+          "end": "",
+          "desc": "La introducció té una melodia d’alguns instruments de vent i guitarra, amb altres efectes sonors de fons. La melodia es repeteix diverses vegades iguals, és com una pregunta-resposta. A la segona roda d’introducció entra la bateria. La velocitat és moderada/ràpida. La forma de cantar és com rapejada, amb els patrons melòdics obstinats de fons.",
+          "title": "Urras — Adala",
+          "extra": "",
+          "extraVideos": []
+        },
+        {
+          "id": "c4",
+          "video": "https://www.youtube.com/watch?v=x_Zd3KoEtRk",
+          "start": "0:00",
+          "end": "",
+          "desc": "La introducció és de veu masculina i guitarra. La primera estrofa i la tornada es fan amb aquests instruments, sense que s’afegeixi res més. \nLa guitarra fa acords acompanyant la melodia. No sembla que hi hagi molts acords. La velocitat és moderada.",
+          "title": "Sense tu — Teràpia de Shock",
+          "extra": "",
+          "extraVideos": []
+        },
+        {
+          "id": "c5",
+          "video": "https://www.youtube.com/watch?v=rs6Y4kZ8qtw",
+          "start": "0:00",
+          "end": "",
+          "desc": "Comença amb una veu masculina que sona com “processada”, seguida de molts talls d’àudio amb veus diferents. Hi ha una guitarra i un instrument de percussió que sonen a contratemps. Sona a reggae. Hi ha altres guitarres de fons, que van fent un obstinat melòdic i alguns acords als temps forts. La velocitat és moderada.",
+          "title": "Me gustas tú — Manu Chao",
+          "extra": "",
+          "extraVideos": []
+        },
+        {
+          "id": "c6",
+          "video": "https://www.youtube.com/watch?v=ArjzURiPFn8",
+          "start": "0:00",
+          "end": "",
+          "desc": "Hi ha una introducció a cappella de veu femenina. Quan s’acaba, s’escolta algú donant l’entrada (com si fos amb les baquetes) i entren instruments de vent a fer una melodia que repeteixen, hi ha acords de teclat a contratemps i la bateria fent patró de rock. La velocitat és moderada. Sona a reggae.",
+          "title": "En la tormenta — Iseo & Dodosound",
+          "extra": "",
+          "extraVideos": []
+        }
+      ]
+    }
+  ]
+}
