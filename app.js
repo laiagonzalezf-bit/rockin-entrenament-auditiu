@@ -556,7 +556,7 @@ function renderIdeas(a){
           </fieldset>
           <div class="row">
             <label class="f">${s.desti === "nova" ? "Títol provisional (opcional)" : "Quina cançó?"}<input id="idea-canco" value="${esc(s.canco)}" placeholder="${s.desti === "nova" ? "p. ex. La nostra primera cançó" : "p. ex. Sense tu"}"></label>
-            <label class="f">Grup o banda<input id="idea-banda" value="${esc(s.banda)}" placeholder="p. ex. 3r B · Grup 2"></label>
+            <label class="f">Grup o banda<input id="idea-banda" value="${esc(s.banda)}" placeholder="p. ex. Las croquetas de la yaya"></label>
           </div>
           <div id="repte-llista">${repteHTML(a)}</div>
           <div class="share-row"><button type="button" class="btn primary" id="idea-print" ${s.sel.length ? "" : "disabled"}>🖨️ Imprimeix el repte</button><button type="button" class="btn" id="idea-copy" ${s.sel.length ? "" : "disabled"}>📋 Copia el text</button></div>
@@ -684,6 +684,16 @@ function printSheet(a, docentView, docent, grup, ordre){
     <p class="ins">${esc(a.vocabInstructions || "Relaciona cada concepte amb la seva definició.")} Escriu a cada casella el número del concepte.</p>
     <div class="banc">${ordre.vocab.map(id => { const v = vocab.find(x => x.id === id); return `<span><b>${numV(id)}</b> ${esc(v.term)}</span>`; }).join("")}</div>
     <ol class="descs defs">${vocab.map(v => `<li><span class="caixa">${sol(numV(v.id))}</span><p>${esc(v.def)}</p></li>`).join("")}</ol>` : "";
+  const idees = ideesOf(a);
+  const part3 = idees.length ? `<section class="p3"><h2>${vocab.length ? 3 : 2}. Idees per a la nostra cançó</h2>
+    <p class="ins">${esc(a.ideesInstructions || "Totes aquestes idees han sortit a les cançons que heu escoltat.")} Marqueu les que voleu provar (us recomanem començar amb 2 o 3).</p>
+    <ul class="idees">${idees.map(x => { const ex = a.items.find(i => i.id === x.exemple); return `<li><span class="quadre"></span><div><b>${esc(x.titol)}</b>${x.desc ? ` — ${esc(x.desc)}` : ""}${docentView && ex && ex.title ? `<br><small>🎧 ${lletra(ex.id)} · ${esc(ex.title)}</small>` : ""}${docentView && x.com ? `<br><small><b>Com provar-ho:</b> ${esc(x.com)}</small>` : ""}</div></li>`; }).join("")}</ul>
+    <div class="repte">
+      <div>Grup o banda: <span class="linia llarga"></span></div>
+      <div><span class="quadre"></span> A la cançó que estem tocant: <span class="linia"></span></div>
+      <div><span class="quadre"></span> En una cançó nova. Títol provisional: <span class="linia"></span></div>
+      <div class="notes">Com ho farem? Qui fa què, en quina part de la cançó…</div>
+    </div></section>` : "";
   const html = `<!doctype html><html lang="ca"><head><meta charset="utf-8"><title>${esc(a.title)}${docentView ? " · solucions" : ""}</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lora:wght@700&family=Ubuntu:wght@400;500;700&display=swap">
 <style>
@@ -709,10 +719,17 @@ table.ordre{border-collapse:collapse;width:100%;font-size:10pt}
 table.ordre th,table.ordre td{border:1px solid #ccc;padding:4px 6px;text-align:left;vertical-align:top}
 td.ll{font-weight:700;font-size:13pt;text-align:center;width:16mm}
 td.url{font-size:8pt;word-break:break-all;width:62mm}
+.p3{break-before:page}
+ul.idees{list-style:none;padding:0;margin:0;display:grid;gap:6px}
+ul.idees li{display:grid;grid-template-columns:7mm 1fr;gap:6px;align-items:start;break-inside:avoid}
+.quadre{display:inline-block;width:4.5mm;height:4.5mm;border:1.5px solid #221F20;border-radius:1px;vertical-align:-2px;margin-right:4px}
+.repte{margin-top:12px;border:1.5px solid #221F20;border-radius:3px;padding:10px 12px;display:grid;gap:10px}
+.linia.llarga{width:120mm}
+.repte .notes{border:1px dashed #999;height:42mm;padding:6px 8px;color:#777;font-size:9.5pt}
 footer{margin-top:14px;font-size:8pt;color:#777;border-top:1px solid #ddd;padding-top:4px}
 @media screen{body{max-width:190mm;margin:16px auto;padding:0 12px}}
 </style></head><body>
-${cap}${escolta}${part1}${part2}
+${cap}${escolta}${part1}${part2}${part3}
 <footer>© Rockin SCCL · CC BY-SA 4.0 · rockin-cat.github.io/entrenament-auditiu</footer>
 <script>window.addEventListener("load",()=>setTimeout(()=>window.print(),400));<\/script>
 </body></html>`;
