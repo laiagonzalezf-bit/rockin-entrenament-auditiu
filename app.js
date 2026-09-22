@@ -203,7 +203,7 @@ function renderGame(){
     <div class="head">
       ${stepsHTML(a)}
       <h1>${esc(a.title)}</h1>
-      ${a.instructions ? `<p>${esc(a.instructions)}</p>` : ""}
+      <p>${esc(a.instructions || "Escolta els fragments musicals, llegeix bé les descripcions i arrossega cada fragment a la descripció que li correspon.")}</p>
       <div class="status" id="status">${statusHTML(a)}</div>
     </div>
     <div id="banner">${bannerHTML(a)}</div>
@@ -298,7 +298,7 @@ app.addEventListener("pointercancel", endDrag);
 /* ---------- editor ---------- */
 function blankItem(){ return {id: "c" + uid(), video: "", start: "", end: "", desc: "", title: "", extra: "", extraVideos: []}; }
 function blankVoc(){ return {id: "v" + uid(), term: "", def: ""}; }
-function blankAct(){ return {vocab: [],id: "a" + uid(), title: "Nova activitat", instructions: "Escolta els fragments i arrossega cada vídeo a la descripció que li correspon.", feedback: "Enhorabona! Ho has encertat tot.", hideVideo: true, items: [blankItem(), blankItem()]}; }
+function blankAct(){ return {vocab: [blankVoc(), blankVoc()], id: "a" + uid(), title: "", instructions: "", feedback: "", hideVideo: true, items: [blankItem(), blankItem(), blankItem(), blankItem()]}; }
 function draftAct(){ return state.draft.activitats.find(a => a.id === state.actId) || state.draft.activitats[0]; }
 
 function renderEditor(){
@@ -318,9 +318,9 @@ function renderEditor(){
         <label class="f">Final del fragment (m:ss)<input id="e-${it.id}" data-k="end" value="${esc(it.end)}" placeholder="opcional" inputmode="numeric"></label>
       </div>
       ${bad ? `<p class="warn">No reconec aquest enllaç de YouTube.</p>` : ""}
-      <label class="f">Descripció que llegeix l'alumnat<textarea id="d-${it.id}" data-k="desc">${esc(it.desc)}</textarea></label>
+      <label class="f">Descripció que llegeix l'alumnat<textarea id="d-${it.id}" data-k="desc" placeholder="Descriu què s'escolta: instruments, veu, velocitat, estructura…">${esc(it.desc)}</textarea></label>
       <div class="row">
-        <label class="f">Títol i artista (es mostra en resoldre)<input id="t-${it.id}" data-k="title" value="${esc(it.title)}"></label>
+        <label class="f">Títol i artista (es mostra en resoldre)<input id="t-${it.id}" data-k="title" value="${esc(it.title)}" placeholder="p. ex. Diamonds — Rihanna"></label>
       </div>
       <label class="f">Text extra (context, preguntes, curiositats…)<textarea id="x-${it.id}" data-k="extra">${esc(it.extra)}</textarea></label>
       <div class="extras"><span class="hint">Vídeos extra (apareixen quan l'alumnat ho resol)</span>
@@ -331,20 +331,21 @@ function renderEditor(){
   }).join("");
   app.innerHTML = `<div class="editor">
     <div class="panel share">
-      <h2>Comparteix aquesta activitat</h2>
+      <div class="item-head"><h2 style="margin-right:auto">Comparteix aquesta activitat</h2><button class="btn small" data-ed="newact">➕ Crea una activitat des de zero</button></div>
       <div class="share-row">
         <button class="btn primary" data-ed="link">🔗 Enllaç per a l'alumnat</button>
         <button class="btn" data-ed="publish">📤 Comparteix a la biblioteca</button>
         <button class="btn" data-ed="biblio">📚 Biblioteca de propostes</button>
+        <button class="btn" data-ed="print">🖨️ Versió imprimible</button>
       </div>
       <div id="share-out"></div>
       <p class="hint">L'enllaç porta l'activitat a dins: l'alumnat l'obre directament, sense cap altra activitat ni el mode professorat. Els canvis que facis es guarden en aquest navegador.</p>
     </div>
     <div class="panel">
       <h2>Activitat</h2>
-      <label class="f">Títol<input id="a-title" data-a="title" value="${esc(a.title)}"></label>
-      <label class="f">Instruccions<textarea id="a-ins" data-a="instructions">${esc(a.instructions)}</textarea></label>
-      <label class="f">Missatge quan ho encerten tot<input id="a-fb" data-a="feedback" value="${esc(a.feedback)}"></label>
+      <label class="f">Títol<input id="a-title" data-a="title" value="${esc(a.title)}" placeholder="p. ex. Timbres i instruments"></label>
+      <label class="f">Instruccions<textarea id="a-ins" data-a="instructions" placeholder="Si ho deixes buit: «Escolta els fragments musicals, llegeix bé les descripcions i arrossega cada fragment a la descripció que li correspon.»">${esc(a.instructions)}</textarea></label>
+      <label class="f">Missatge quan ho encerten tot<input id="a-fb" data-a="feedback" value="${esc(a.feedback)}" placeholder="Si ho deixes buit: «Molt bé!»"></label>
       <label class="check"><input type="checkbox" id="a-hide" data-a="hideVideo" ${a.hideVideo ? "checked" : ""}> Amaga la imatge dels vídeos (només s'escolta; l'alumnat pot destapar-la)</label>
       <div class="item-head"><span class="n"></span>
         <button class="btn small" data-ed="dupact">Duplica l'activitat</button>
@@ -366,7 +367,7 @@ function renderEditor(){
 function saveBar(){
   const m = state.msg || "Els canvis es guarden automàticament en aquest navegador.";
   return `<div class="savebar"><span class="msg" role="status">${esc(m)}</span>
-    <button class="btn" data-ed="newact">+ Nova activitat</button>
+    <button class="btn" data-ed="newact">➕ Activitat des de zero</button>
     <button class="btn ghost" data-ed="discard" title="Esborra els canvis d'aquest navegador i torna a les activitats oficials">Restaura les oficials</button>
     <button class="btn ghost" data-ed="save" title="Per a qui gestiona el repositori de Rockin">Descarrega activitats.json</button></div>`;
 }
@@ -415,6 +416,7 @@ app.addEventListener("click", async e => {
     case "link": return shareLink(a);
     case "publish": return publishAct(a);
     case "biblio": return openLibrary();
+    case "print": return printForm(a);
   }
   markDirty(); renderEditorKeep();
 });
@@ -489,6 +491,92 @@ async function shareLink(a){
     <a class="btn small" href="${esc(url)}" target="_blank" rel="noopener">Prova-ho com l'alumnat ↗</a>
   </div>`;
   const inp = $("#share-url"); inp.addEventListener("focus", () => inp.select()); if (!copied) inp.focus();
+}
+
+/* ---------- versió imprimible (fitxa de l'alumnat i full del docent) ---------- */
+function printForm(a){
+  const err = actError(a); if (err){ toast(err); return; }
+  $("#share-out").innerHTML = `<div class="share-form">
+    <div class="row">
+      <label class="f">Docent<input id="pr-docent" value="${esc(llegirLocal(K_AUTOR))}" placeholder="Nom i cognom"></label>
+      <label class="f">Grup<input id="pr-grup" value="${esc(llegirLocal("ea-grup"))}" placeholder="p. ex. 2n ESO B"></label>
+    </div>
+    <div class="share-row">
+      <button class="btn primary" data-print="alumne">🖨️ Fitxa de l'alumnat</button>
+      <button class="btn" data-print="docent">🖨️ Full del docent (solucions)</button>
+      <button class="btn ghost" id="pr-cancel">Tanca</button>
+    </div>
+    <p class="hint">Les lletres dels fragments es barregen cada vegada que imprimeixes. Imprimeix els dos fulls alhora perquè el del docent tingui les mateixes lletres.</p>
+  </div>`;
+  let ordre = null;
+  $("#pr-cancel").onclick = () => $("#share-out").innerHTML = "";
+  $("#share-out").querySelectorAll("[data-print]").forEach(b => b.onclick = () => {
+    const docent = $("#pr-docent").value.trim(), grup = $("#pr-grup").value.trim();
+    if (docent) escriureLocal(K_AUTOR, docent);
+    escriureLocal("ea-grup", grup);
+    if (!ordre) ordre = {cancons: shuffle(a.items.map(i => i.id)), vocab: shuffle((a.vocab || []).filter(v => v.term && v.def).map(v => v.id))};
+    printSheet(cleanAct(a), b.dataset.print === "docent", docent, grup, ordre);
+  });
+}
+function printSheet(a, docentView, docent, grup, ordre){
+  const lletra = id => LETTERS[ordre.cancons.indexOf(id)] || "?";
+  const vocab = (a.vocab || []), numV = id => ordre.vocab.indexOf(id) + 1;
+  const sol = t => docentView ? `<span class="sol">${esc(t)}</span>` : "";
+  const cap = `<header class="cap">
+      <img src="https://rockin.cat/wp-content/uploads/2022/07/rockin-logo.svg" alt="Rockin">
+      <div class="dades">
+        ${docentView ? `<div><b>Full del docent · solucions</b></div>` : `<div>Nom i cognoms: <span class="linia"></span></div>`}
+        <div>Grup: <b>${esc(grup) || '<span class="linia curta"></span>'}</b> &nbsp; Data: <span class="linia curta"></span></div>
+        ${docent ? `<div>Docent: <b>${esc(docent)}</b></div>` : ""}
+      </div>
+    </header>
+    <h1>${esc(a.title)}</h1>`;
+  const escolta = docentView ? `<h2>Ordre dels fragments</h2>
+    <table class="ordre"><thead><tr><th>Fragment</th><th>Cançó</th><th>Enllaç</th></tr></thead><tbody>
+    ${ordre.cancons.map(id => { const it = a.items.find(i => i.id === id); return `<tr><td class="ll">${lletra(id)}</td><td>${esc(it.title || "—")}${it.start && it.start !== "0:00" ? ` <small>(des de ${esc(it.start)})</small>` : ""}</td><td class="url">${esc(watchUrl(it.video, it.start))}</td></tr>`; }).join("")}
+    </tbody></table>` : "";
+  const part1 = `<h2>1. Escolta i relaciona</h2>
+    <p class="ins">Escoltaràs ${a.items.length} fragments (${LETTERS[0]}–${LETTERS[a.items.length - 1]}). Escriu a cada casella la lletra del fragment que correspon a la descripció.</p>
+    <ol class="descs">${a.items.map(it => `<li><span class="caixa">${sol(lletra(it.id))}</span><p>${esc(it.desc)}</p></li>`).join("")}</ol>`;
+  const part2 = vocab.length ? `<h2>2. Vocabulari musical</h2>
+    <p class="ins">${esc(a.vocabInstructions || "Relaciona cada concepte amb la seva definició.")} Escriu a cada casella el número del concepte.</p>
+    <div class="banc">${ordre.vocab.map(id => { const v = vocab.find(x => x.id === id); return `<span><b>${numV(id)}</b> ${esc(v.term)}</span>`; }).join("")}</div>
+    <ol class="descs defs">${vocab.map(v => `<li><span class="caixa">${sol(numV(v.id))}</span><p>${esc(v.def)}</p></li>`).join("")}</ol>` : "";
+  const html = `<!doctype html><html lang="ca"><head><meta charset="utf-8"><title>${esc(a.title)}${docentView ? " · solucions" : ""}</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lora:wght@700&family=Ubuntu:wght@400;500;700&display=swap">
+<style>
+@page{size:A4;margin:14mm 14mm 16mm}
+*{box-sizing:border-box}
+body{-webkit-print-color-adjust:exact;print-color-adjust:exact;font-family:Ubuntu,Helvetica,Arial,sans-serif;color:#221F20;font-size:10.5pt;line-height:1.4;margin:0}
+.cap{display:flex;justify-content:space-between;align-items:center;gap:16px;border-bottom:3px solid #FDBE10;padding-bottom:8px}
+.cap img{height:34px}
+.dades{display:grid;gap:4px;text-align:right;font-size:10pt}
+.linia{display:inline-block;width:62mm;border-bottom:1px solid #221F20;height:1em;vertical-align:bottom}
+.linia.curta{width:28mm}
+h1{font-family:Lora,Georgia,serif;font-size:20pt;margin:12px 0 4px}
+h2{font-family:Lora,Georgia,serif;font-size:13pt;margin:16px 0 4px;padding:2px 8px;background:#FDBE10;display:inline-block}
+.ins{margin:4px 0 8px;color:#444}
+ol.descs{list-style:none;padding:0;margin:0;display:grid;gap:7px}
+ol.descs li{display:grid;grid-template-columns:13mm 1fr;gap:10px;align-items:start;break-inside:avoid}
+ol.descs p{margin:0}
+.caixa{width:13mm;height:11mm;border:1.5px solid #221F20;border-radius:2px;display:flex;align-items:center;justify-content:center}
+.sol{font-weight:700;font-size:15pt;color:#C0392B}
+.banc{display:flex;flex-wrap:wrap;gap:6px 14px;border:1px dashed #999;padding:8px 10px;margin-bottom:8px}
+.banc b{display:inline-block;min-width:1.4em;text-align:center;background:#221F20;color:#FDBE10;border-radius:2px;margin-right:3px}
+table.ordre{border-collapse:collapse;width:100%;font-size:10pt}
+table.ordre th,table.ordre td{border:1px solid #ccc;padding:4px 6px;text-align:left;vertical-align:top}
+td.ll{font-weight:700;font-size:13pt;text-align:center;width:16mm}
+td.url{font-size:8pt;word-break:break-all;width:62mm}
+footer{margin-top:14px;font-size:8pt;color:#777;border-top:1px solid #ddd;padding-top:4px}
+@media screen{body{max-width:190mm;margin:16px auto;padding:0 12px}}
+</style></head><body>
+${cap}${escolta}${part1}${part2}
+<footer>© Rockin SCCL · CC BY-SA 4.0 · rockin-cat.github.io/entrenament-auditiu</footer>
+<script>window.addEventListener("load",()=>setTimeout(()=>window.print(),400));<\/script>
+</body></html>`;
+  const w = window.open("", "_blank");
+  if (!w){ toast("El navegador ha bloquejat la finestra. Permet les finestres emergents per imprimir."); return; }
+  w.document.open(); w.document.write(html); w.document.close();
 }
 
 /* ---------- biblioteca de propostes (Google Apps Script + Drive) ---------- */
