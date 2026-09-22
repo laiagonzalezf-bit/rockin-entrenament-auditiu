@@ -13,6 +13,11 @@ Activitat per relacionar fragments de cançons amb descripcions.
 | `app.js`, `app.css` | El funcionament i l'estil (no cal tocar-los) |
 | `activitats.json` | **Tot el contingut**: activitats, cançons, descripcions, vídeos extra |
 
+## Parts de l'activitat
+
+1. **Escolta i relaciona:** fragments de cançons ↔ descripcions.
+2. **Vocabulari musical:** s'obre quan l'alumnat resol la part 1. Conceptes ↔ definicions. Si una activitat no té vocabulari, només hi ha la part 1.
+
 ## Com editar el contingut
 
 1. Obre la pàgina amb `?professorat` al final de l'adreça.
@@ -35,4 +40,10 @@ Cada cançó té aquests camps:
   "extra": "Text extra opcional",
   "extraVideos": ["https://www.youtube.com/watch?v=..."]
 }
+```
+
+Cada concepte de vocabulari (dins de `"vocab"`):
+
+```json
+{ "id": "v1", "term": "Obstinat", "def": "Patró curt que es repeteix moltes vegades..." }
 ```

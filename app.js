@@ -13,7 +13,9 @@ const app = $("#app");
 const state = {
   mode: "alumne",
   actId: null,
-  game: null,        // {order:[itemIds shuffled], placed:{descId:itemId}, ok:{descId:true}, bad:{}, done:false, selected:null}
+  game: null,
+  voc: null,          // part 2 (vocabulari), same shape as game
+  part: 1,        // {order:[itemIds shuffled], placed:{descId:itemId}, ok:{descId:true}, bad:{}, done:false, selected:null}
   draft: null,
   dirty: false,
   readOnly: false,
@@ -90,19 +92,27 @@ document.addEventListener("click", e => {
 });
 
 /* ---------- game ---------- */
+function G(){ return state.part === 2 ? state.voc : state.game; }
+function vocabOf(a){ return (a && Array.isArray(a.vocab) ? a.vocab : []).filter(v => v.term && v.def); }
+function listOf(a){ return state.part === 2 ? vocabOf(a) : a.items; }
+function newVoc(a){ state.voc = {order: shuffle(vocabOf(a).map(v => v.id)), placed: {}, ok: {}, bad: {}, done: false, selected: null}; }
 function newGame(a){
   state.game = {order: shuffle(a.items.map(i => i.id)), placed: {}, ok: {}, bad: {}, done: false, selected: null};
 }
-function labelOf(itemId){ return LETTERS[state.game.order.indexOf(itemId)] || "?"; }
-function placedWhere(itemId){ return Object.keys(state.game.placed).find(k => state.game.placed[k] === itemId); }
+function labelOf(itemId){
+  if (state.part === 2){ const v = vocabOf(act()).find(x => x.id === itemId); return v ? v.term : "?"; }
+  return LETTERS[state.game.order.indexOf(itemId)] || "?";
+}
+function placedWhere(itemId){ const g = G(); return Object.keys(g.placed).find(k => g.placed[k] === itemId); }
 
 function grabHTML(id){
-  const g = state.game, where = placedWhere(id), locked = !!(where && g.ok[where]);
+  const g = G(), where = placedWhere(id), locked = !!(where && g.ok[where]);
+  if (state.part === 2) return `<button type="button" class="grab term-btn" data-grab="${id}" aria-pressed="${g.selected === id}" ${locked ? "disabled" : ""}>${esc(labelOf(id))}</button>`;
   return locked ? `<span class="hint">Correcte</span>` : `<button type="button" class="grab" data-grab="${id}" aria-pressed="${g.selected === id}">${g.selected === id ? "Ara toca una descripció" : "Arrossega"}</button>`;
 }
 function fragClass(id){
-  const g = state.game, where = placedWhere(id), locked = !!(where && g.ok[where]);
-  return "frag" + (where ? " placed" : "") + (locked ? " locked" : "") + (g.selected === id ? " selected" : "");
+  const g = G(), where = placedWhere(id), locked = !!(where && g.ok[where]);
+  return (state.part === 2 ? "frag term" : "frag") + (where ? " placed" : "") + (locked ? " locked" : "") + (g.selected === id ? " selected" : "");
 }
 function descsHTML(a){
   const g = state.game;
@@ -120,19 +130,58 @@ function descsHTML(a){
     </article>`;
   }).join("");
 }
+function stepsHTML(a){
+  if (!vocabOf(a).length) return "";
+  const unlocked = state.game && state.game.done;
+  return `<nav class="steps" aria-label="Parts de l'activitat">
+    <button type="button" data-part="1" aria-current="${state.part === 1}"><span>1</span> Escolta i relaciona</button>
+    <button type="button" data-part="2" aria-current="${state.part === 2}" ${unlocked ? "" : "disabled title=\"Primer acaba la part 1\""}><span>2</span> Vocabulari musical</button>
+  </nav>`;
+}
 function statusHTML(a){
-  const g = state.game, total = a.items.length, okN = Object.keys(g.ok).length, placedN = Object.keys(g.placed).length;
+  const g = G(), total = listOf(a).length, okN = Object.keys(g.ok).length, placedN = Object.keys(g.placed).length;
   return `<span class="meter"><b>${placedN}</b>/${total} col·locats · <b>${okN}</b> correctes</span>
     <button type="button" class="btn primary" id="check" ${placedN === 0 || g.done ? "disabled" : ""}>Comprova</button>
     <button type="button" class="btn ghost" id="restart">Torna a començar</button>`;
 }
 function bannerHTML(a){
-  return state.game.done ? `<div class="banner" role="status"><b>${esc(a.feedback || "Molt bé!")}</b><span>Ara pots veure el títol de cada cançó i el material extra.</span></div>` : "";
+  if (state.part === 2) return state.voc.done ? `<div class="banner" role="status"><b>Vocabulari complet!</b><span>Ja domines els conceptes musicals d'aquesta activitat.</span></div>` : "";
+  const next = vocabOf(a).length ? `<button type="button" class="btn next" id="go2">Continua: vocabulari musical →</button>` : "";
+  return state.game.done ? `<div class="banner" role="status"><b>${esc(a.feedback || "Molt bé!")}</b><span>Ara pots veure el títol de cada cançó i el material extra.</span>${next}</div>` : "";
+}
+function vocabDescsHTML(a){
+  const g = state.voc;
+  return vocabOf(a).map(v => {
+    const pid = g.placed[v.id], cls = g.ok[v.id] ? " ok" : g.bad[v.id] ? " bad" : "";
+    return `<article class="desc def${cls}${g.selected && !g.ok[v.id] ? " target" : ""}" data-desc="${v.id}">
+      <div class="slot wide" data-slot="${v.id}">${pid ? `<button type="button" class="chip" data-unplace="${v.id}" aria-label="Treu ${esc(labelOf(pid))}">${esc(labelOf(pid))}</button>` : "?"}</div>
+      <p>${esc(v.def)}</p>
+    </article>`;
+  }).join("");
+}
+function renderVocab(a){
+  if (!state.voc) newVoc(a);
+  const g = state.voc;
+  const pool = g.order.map(id => `<div class="${fragClass(id)}" data-item="${id}"><span class="grab-wrap">${grabHTML(id)}</span></div>`).join("");
+  app.innerHTML = `
+    <div class="head">
+      ${stepsHTML(a)}
+      <h1>Vocabulari musical</h1>
+      <p>${esc(a.vocabInstructions || "Relaciona cada concepte que ha sortit a les descripcions amb la seva definició. Arrossega'l o toca'l i després toca la definició.")}</p>
+      <div class="status" id="status">${statusHTML(a)}</div>
+    </div>
+    <div id="banner">${bannerHTML(a)}</div>
+    <div class="game vocab">
+      <section aria-label="Conceptes"><h2 class="col-title">Conceptes</h2><div class="pool terms">${pool}</div></section>
+      <section aria-label="Definicions"><h2 class="col-title">Definicions</h2><div class="descs" id="descs">${vocabDescsHTML(a)}</div></section>
+    </div>`;
 }
 function renderGame(){
   const a = act();
   if (!a){ app.innerHTML = `<div class="head"><h1>Encara no hi ha activitats</h1><p>Passa a mode professorat per crear-ne una.</p></div>`; return; }
   if (!state.game) newGame(a);
+  if (state.part === 2 && state.game.done && vocabOf(a).length) return renderVocab(a);
+  state.part = 1;
   const g = state.game;
   const pool = g.order.map(id => {
     const it = a.items.find(i => i.id === id); if (!it) return "";
@@ -145,6 +194,7 @@ function renderGame(){
   }).join("");
   app.innerHTML = `
     <div class="head">
+      ${stepsHTML(a)}
       <h1>${esc(a.title)}</h1>
       ${a.instructions ? `<p>${esc(a.instructions)}</p>` : ""}
       <div class="status" id="status">${statusHTML(a)}</div>
@@ -160,46 +210,51 @@ function updateGame(){
   const a = act();
   $("#status").innerHTML = statusHTML(a);
   $("#banner").innerHTML = bannerHTML(a);
-  $("#descs").innerHTML = descsHTML(a);
+  $("#descs").innerHTML = state.part === 2 ? vocabDescsHTML(a) : descsHTML(a);
   document.querySelectorAll(".frag[data-item]").forEach(f => {
     const id = f.dataset.item; f.className = fragClass(id); $(".grab-wrap", f).innerHTML = grabHTML(id);
   });
 }
 
 function place(itemId, descId){
-  const g = state.game; if (!g || g.ok[descId]) return;
+  const g = G(); if (!g || g.ok[descId]) return;
   const prev = placedWhere(itemId); if (prev){ if (g.ok[prev]) return; delete g.placed[prev]; delete g.bad[prev]; }
   g.placed[descId] = itemId; delete g.bad[descId]; g.selected = null;
   updateGame();
 }
+function refreshSteps(a){ const st = $(".steps"); if (st) st.outerHTML = stepsHTML(a); }
+function goPart(p){ stopAll(); state.part = p; if (p === 2 && !state.voc) newVoc(act()); render(); window.scrollTo(0, 0); }
 function renderKeepPlayers(){
   // Re-rendering reloads iframes; keep scroll position.
   const y = window.scrollY; render(); window.scrollTo(0, y);
 }
 function check(){
-  const g = state.game, a = act();
+  const g = G(), a = act();
   g.bad = {};
   for (const [d, i] of Object.entries(g.placed)){ if (d === i) g.ok[d] = true; else g.bad[d] = true; }
   const badN = Object.keys(g.bad).length;
-  g.done = a.items.every(it => g.ok[it.id]);
+  g.done = listOf(a).every(it => g.ok[it.id]);
+  if (g.done && state.part === 1) refreshSteps(a);
   updateGame();
   if (g.done) $("#banner").scrollIntoView({behavior: "smooth", block: "nearest"});
   if (g.done) return;
-  toast(badN ? `${badN} ${badN === 1 ? "no encaixa" : "no encaixen"}. Torna-ho a escoltar!` : "Tot el que has col·locat és correcte. Continua!");
-  if (badN) setTimeout(() => { if (state.game !== g || state.mode !== "alumne") return; for (const d of Object.keys(g.bad)) delete g.placed[d]; g.bad = {}; updateGame(); }, 1600);
+  toast(badN ? `${badN} ${badN === 1 ? "no encaixa" : "no encaixen"}. ${state.part === 2 ? "Torna-ho a provar!" : "Torna-ho a escoltar!"}` : "Tot el que has col·locat és correcte. Continua!");
+  if (badN) setTimeout(() => { if (G() !== g || state.mode !== "alumne") return; for (const d of Object.keys(g.bad)) delete g.placed[d]; g.bad = {}; updateGame(); }, 1600);
 }
 
 app.addEventListener("click", e => {
   if (state.mode !== "alumne") return;
   const t = e.target;
   if (t.id === "check") return check();
-  if (t.id === "restart"){ newGame(act()); return renderKeepPlayers(); }
+  if (t.id === "restart"){ if (state.part === 2) newVoc(act()); else { newGame(act()); state.voc = null; } return renderKeepPlayers(); }
+  if (t.closest("#go2")) return goPart(2);
+  const pb = t.closest("[data-part]"); if (pb){ if (!pb.disabled) goPart(Number(pb.dataset.part)); return; }
   const un = t.closest("[data-unplace]");
-  if (un){ const d = un.dataset.unplace; if (!state.game.ok[d]){ delete state.game.placed[d]; delete state.game.bad[d]; updateGame(); } return; }
+  if (un){ const d = un.dataset.unplace, g = G(); if (!g.ok[d]){ delete g.placed[d]; delete g.bad[d]; updateGame(); } return; }
   const gb = t.closest("[data-grab]");
-  if (gb){ if (drag.moved) return; const id = gb.dataset.grab; state.game.selected = state.game.selected === id ? null : id; return updateGame(); }
+  if (gb){ if (drag.moved) return; const id = gb.dataset.grab; const g = G(); g.selected = g.selected === id ? null : id; return updateGame(); }
   const d = t.closest("[data-desc]");
-  if (d && state.game.selected) place(state.game.selected, d.dataset.desc);
+  if (d && G() && G().selected) place(G().selected, d.dataset.desc);
 });
 
 /* pointer drag (mouse + touch) */
@@ -214,6 +269,7 @@ app.addEventListener("pointermove", e => {
   if (!drag.moved && Math.hypot(e.clientX - drag.sx, e.clientY - drag.sy) < 6) return;
   if (!drag.moved){ drag.moved = true; drag.ghost = document.createElement("div"); drag.ghost.className = "ghost-drag"; drag.ghost.textContent = labelOf(drag.id); document.body.appendChild(drag.ghost); }
   drag.ghost.style.left = e.clientX + "px"; drag.ghost.style.top = e.clientY + "px";
+  if (e.clientY < 70) window.scrollBy(0, -14); else if (e.clientY > window.innerHeight - 70) window.scrollBy(0, 14);
   const el = document.elementFromPoint(e.clientX, e.clientY), d = el && el.closest("[data-desc]");
   const slot = d ? $(".slot", d) : null;
   if (drag.over && drag.over !== slot) drag.over.classList.remove("over");
@@ -234,7 +290,8 @@ app.addEventListener("pointercancel", endDrag);
 
 /* ---------- editor ---------- */
 function blankItem(){ return {id: "c" + uid(), video: "", start: "", end: "", desc: "", title: "", extra: "", extraVideos: []}; }
-function blankAct(){ return {id: "a" + uid(), title: "Nova activitat", instructions: "Escolta els fragments i arrossega cada vídeo a la descripció que li correspon.", feedback: "Enhorabona! Ho has encertat tot.", hideVideo: true, items: [blankItem(), blankItem()]}; }
+function blankVoc(){ return {id: "v" + uid(), term: "", def: ""}; }
+function blankAct(){ return {vocab: [],id: "a" + uid(), title: "Nova activitat", instructions: "Escolta els fragments i arrossega cada vídeo a la descripció que li correspon.", feedback: "Enhorabona! Ho has encertat tot.", hideVideo: true, items: [blankItem(), blankItem()]}; }
 function draftAct(){ return state.draft.activitats.find(a => a.id === state.actId) || state.draft.activitats[0]; }
 
 function renderEditor(){
@@ -277,6 +334,16 @@ function renderEditor(){
         <button class="btn small danger" data-ed="delact">Elimina l'activitat</button></div>
     </div>
     <div class="panel"><h2>Cançons (${a.items.length})</h2>${items}<div><button class="btn" data-ed="additem">+ Afegeix una cançó</button></div></div>
+    <div class="panel"><h2>Part 2 · Vocabulari (${(a.vocab || []).length})</h2>
+      <p class="hint">Apareix quan l'alumnat ha resolt la part 1. Deixa-ho buit si no vols segona part.</p>
+      <label class="f">Instruccions de la part 2<input id="a-vins" data-a="vocabInstructions" value="${esc(a.vocabInstructions || "")}" placeholder="Relaciona cada concepte amb la seva definició."></label>
+      ${(a.vocab || []).map((v, n) => `<div class="item voc" data-v="${n}">
+        <div class="item-head"><span class="n">Concepte ${n + 1}</span><button class="btn small danger" data-ed="delvoc">Elimina</button></div>
+        <div class="row"><label class="f">Concepte<input id="vt-${v.id}" data-vk="term" value="${esc(v.term)}"></label></div>
+        <label class="f">Definició<textarea id="vd-${v.id}" data-vk="def">${esc(v.def)}</textarea></label>
+      </div>`).join("")}
+      <div><button class="btn" data-ed="addvoc">+ Afegeix un concepte</button></div>
+    </div>
   </div>${saveBar()}`;
 }
 function saveBar(){
@@ -293,6 +360,8 @@ app.addEventListener("input", e => {
   if (state.mode !== "prof") return;
   const t = e.target, a = draftAct(); if (!a) return;
   if (t.dataset.a){ a[t.dataset.a] = t.type === "checkbox" ? t.checked : t.value; if (t.dataset.a === "title") renderTabs(); return markDirty(); }
+  const vb = t.closest("[data-v]");
+  if (vb && t.dataset.vk){ a.vocab[Number(vb.dataset.v)][t.dataset.vk] = t.value; return markDirty(); }
   const box = t.closest("[data-i]"); if (!box) return;
   const it = a.items[Number(box.dataset.i)];
   if (t.dataset.k) it[t.dataset.k] = t.value;
@@ -309,13 +378,15 @@ app.addEventListener("click", async e => {
   const L = state.draft.activitats;
   switch (op){
     case "additem": a.items.push(blankItem()); break;
+    case "addvoc": (a.vocab ||= []).push(blankVoc()); break;
+    case "delvoc": a.vocab.splice(Number(b.closest("[data-v]").dataset.v), 1); break;
     case "delitem": if (a.items.length <= 2){ toast("Una activitat necessita com a mínim dues cançons."); return; } a.items.splice(n, 1); break;
     case "up": [a.items[n - 1], a.items[n]] = [a.items[n], a.items[n - 1]]; break;
     case "down": [a.items[n + 1], a.items[n]] = [a.items[n], a.items[n + 1]]; break;
     case "addxv": (a.items[n].extraVideos ||= []).push(""); break;
     case "delxv": a.items[n].extraVideos.splice(Number(b.dataset.k2), 1); break;
     case "newact": { const x = blankAct(); L.push(x); state.actId = x.id; break; }
-    case "dupact": { const x = clone(a); x.id = "a" + uid(); x.title = a.title + " (còpia)"; x.items.forEach(i => i.id = "c" + uid()); L.push(x); state.actId = x.id; break; }
+    case "dupact": { const x = clone(a); x.id = "a" + uid(); x.title = a.title + " (còpia)"; x.items.forEach(i => i.id = "c" + uid()); (x.vocab || []).forEach(v => v.id = "v" + uid()); L.push(x); state.actId = x.id; break; }
     case "delact": {
       if (b.dataset.confirm !== "1"){ b.dataset.confirm = "1"; b.textContent = "Segur? Toca per eliminar"; return; }
       L.splice(L.indexOf(a), 1); state.actId = L[0] ? L[0].id : null; break;
@@ -346,7 +417,7 @@ function githubEditUrl(){
 }
 async function save(){
   const err = validate(state.draft); if (err){ toast(err); return; }
-  const cleaned = clone(state.draft); cleaned.activitats.forEach(a => a.items.forEach(i => i.extraVideos = (i.extraVideos || []).filter(v => v.trim())));
+  const cleaned = clone(state.draft); cleaned.activitats.forEach(a => { a.items.forEach(i => i.extraVideos = (i.extraVideos || []).filter(v => v.trim())); a.vocab = (a.vocab || []).filter(v => v.term.trim() && v.def.trim()); });
   const text = JSON.stringify(cleaned, null, 2) + "\n";
   const blob = new Blob([text], {type: "application/json"});
   const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "activitats.json";
@@ -376,12 +447,12 @@ $("#modes").addEventListener("click", e => {
   stopAll();
   state.mode = b.dataset.mode;
   if (state.mode === "prof" && !state.draft) state.draft = clone(DATA);
-  if (state.mode === "alumne"){ if (!DATA.activitats.some(a => a.id === state.actId)) state.actId = DATA.activitats[0]?.id || null; state.game = null; }
+  if (state.mode === "alumne"){ if (!DATA.activitats.some(a => a.id === state.actId)) state.actId = DATA.activitats[0]?.id || null; state.game = null; state.voc = null; state.part = 1; }
   render(); window.scrollTo(0, 0);
 });
 $("#acts").addEventListener("click", e => {
   const b = e.target.closest("[data-act]"); if (!b) return;
-  stopAll(); state.actId = b.dataset.act; state.game = null; render();
+  stopAll(); state.actId = b.dataset.act; state.game = null; state.voc = null; state.part = 1; render();
 });
 
 /* restore an unsaved draft after a reload (e.g. a save conflict) */

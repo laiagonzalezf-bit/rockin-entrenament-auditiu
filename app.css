@@ -130,3 +130,28 @@ label.f textarea{min-height:88px;resize:vertical}
 .savebar .msg{font-size:14px;color:var(--muted);margin-right:auto}
 .hint{font-size:13px;color:var(--muted);margin:0}
 .warn{color:var(--bad);font-size:13px;margin:0}
+
+/* parts de l'activitat */
+.steps{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px}
+.steps button{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--surface);color:var(--muted);padding:6px 12px 6px 6px;border-radius:999px;font-size:14px;font-weight:600}
+.steps button span{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--surface-2);color:var(--ink);font-size:13px}
+.steps button[aria-current="true"]{border-color:var(--ink);color:var(--ink)}
+.steps button[aria-current="true"] span{background:var(--tape);color:var(--tape-ink)}
+.steps button:disabled{opacity:.5;cursor:not-allowed}
+.banner .next{margin-left:auto;background:var(--surface);color:var(--ink);border-color:var(--surface)}
+
+/* part 2: vocabulari */
+@media (min-width:920px){.game.vocab{grid-template-columns:minmax(0,4fr) minmax(0,7fr)}}
+.pool.terms{display:flex;flex-wrap:wrap;gap:10px;grid-template-columns:none}
+.frag.term{background:none;border:0;overflow:visible;display:block}
+.frag.term .grab-wrap{margin:0}
+.term-btn{font-family:var(--body);font-weight:700;font-size:16px;background:var(--tape);color:var(--tape-ink);border:2px solid var(--tape);border-radius:4px;padding:8px 14px;touch-action:none;user-select:none;cursor:grab}
+.frag.term.selected .term-btn{border-color:var(--ink);box-shadow:0 0 0 2px var(--ink)}
+.frag.term.placed .term-btn{opacity:.5}
+.frag.term.locked .term-btn{background:var(--ok-soft);border-color:var(--ok);color:var(--ink);opacity:1;cursor:default}
+.slot.wide{width:auto;min-width:120px;padding-inline:6px}
+.slot.wide .chip{font-family:var(--body);font-size:15px;white-space:nowrap}
+.desc.def{grid-template-columns:auto minmax(0,1fr)}
+@media (max-width:520px){.desc.def{grid-template-columns:minmax(0,1fr)}.slot.wide{min-width:0}}
+.ghost-drag{white-space:nowrap}
+.frag.term.placed,.frag.term.locked{opacity:1}

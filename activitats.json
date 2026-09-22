@@ -67,6 +67,59 @@
           "extra": "",
           "extraVideos": []
         }
+      ],
+      "vocabInstructions": "Relaciona cada concepte que ha sortit a les descripcions amb la seva definició.",
+      "vocab": [
+        {
+          "id": "v1",
+          "term": "Pregunta/resposta",
+          "def": "Dues frases musicals que es contesten: una proposa una idea i l'altra hi respon, sovint amb una veu o un instrument diferent."
+        },
+        {
+          "id": "v2",
+          "term": "Obstinat",
+          "def": "Patró melòdic o rítmic curt que es repeteix moltes vegades seguides mentre la resta de la música continua."
+        },
+        {
+          "id": "v3",
+          "term": "Veu processada",
+          "def": "Veu modificada amb efectes electrònics (filtres, Auto-Tune, distorsió…) que la fan sonar diferent d'una veu natural."
+        },
+        {
+          "id": "v4",
+          "term": "Contratemps",
+          "def": "Sons o accents que cauen entre les pulsacions, just després de cada temps, en lloc de caure-hi a sobre."
+        },
+        {
+          "id": "v5",
+          "term": "A cappella",
+          "def": "Música cantada només amb veus, sense cap instrument que l'acompanyi."
+        },
+        {
+          "id": "v6",
+          "term": "Reggae",
+          "def": "Estil nascut a Jamaica, de tempo moderat, on la guitarra i el teclat marquen els acords a contratemps."
+        },
+        {
+          "id": "v7",
+          "term": "Tornada",
+          "def": "Part de la cançó que es repeteix amb la mateixa lletra i melodia; sol ser la més fàcil de recordar."
+        },
+        {
+          "id": "v8",
+          "term": "Estrofa",
+          "def": "Part de la cançó que explica la història: la melodia es repeteix, però la lletra canvia cada vegada."
+        },
+        {
+          "id": "v9",
+          "term": "Temps fort",
+          "def": "Pulsació del compàs que sona amb més pes, com el primer temps de cada compàs."
+        },
+        {
+          "id": "v10",
+          "term": "Acord",
+          "def": "Tres o més notes diferents que sonen alhora."
+        }
       ]
     }
   ]
