@@ -120,6 +120,107 @@
           "term": "Acord",
           "def": "Tres o més notes diferents que sonen alhora."
         }
+      ],
+      "ideesInstructions": "Totes aquestes idees han sortit a les cançons que heu escoltat. Trieu-ne les que us agradin i apliqueu-les a la cançó que esteu tocant o a una de nova.",
+      "idees": [
+        {
+          "id": "i1",
+          "titol": "Un so d'inici que no és un instrument",
+          "desc": "Abans que entri la banda sona un efecte: un tic-tac, un timbre, una veu gravada…",
+          "com": "Graveu un so amb el mòbil (o feu-lo amb la boca o percussió corporal) i poseu-lo abans del primer compàs.",
+          "exemple": "c1"
+        },
+        {
+          "id": "i2",
+          "titol": "Cors que responen al cantant",
+          "desc": "A la tornada, el cantant diu una frase i la resta del grup li respon (pregunta/resposta).",
+          "com": "Partiu la tornada en frases curtes: la veu principal canta la primera i la resta del grup respon o repeteix.",
+          "exemple": "c1"
+        },
+        {
+          "id": "i3",
+          "titol": "La bateria entra més tard",
+          "desc": "La primera volta sona sense bateria; entra a la segona i la cançó guanya energia.",
+          "com": "Primera volta només veu i teclat o guitarra; la bateria entra just a la segona volta.",
+          "exemple": "c1"
+        },
+        {
+          "id": "i4",
+          "titol": "La veu entra després de cada acord",
+          "desc": "A la introducció, el piano toca un acord i la veu canta just després, al buit que queda.",
+          "com": "El teclat toca un acord i s'espera; la veu canta en aquell espai. Alterneu-vos així tota la introducció.",
+          "exemple": "c2"
+        },
+        {
+          "id": "i5",
+          "titol": "Bateria que es va omplint",
+          "desc": "El patró de bateria comença molt senzill i a cada volta s'hi afegeix alguna cosa.",
+          "com": "Volta 1: només bombo. Volta 2: + caixa. Volta 3: + charles o plats.",
+          "exemple": "c2"
+        },
+        {
+          "id": "i6",
+          "titol": "Buidar després de la tornada",
+          "desc": "Quan acaba la tornada es treuen instruments per crear contrast.",
+          "com": "Després de la tornada, que només toquin un o dos instruments durant la primera frase de l'estrofa.",
+          "exemple": "c2"
+        },
+        {
+          "id": "i7",
+          "titol": "Cordes a la tornada",
+          "desc": "A la tornada apareix un so nou (cordes, com violins) que la fa més gran.",
+          "com": "Busqueu un so de cordes o pad al teclat i toqueu notes llargues només a la tornada.",
+          "exemple": "c2"
+        },
+        {
+          "id": "i8",
+          "titol": "Un riff d'introducció que es repeteix",
+          "desc": "Una melodia curta que es repeteix diverses vegades, com una pregunta i una resposta, abans que entri la veu.",
+          "com": "Inventeu una melodia de 4 notes (la pregunta) i una altra que hi respongui. Repetiu-les dues vegades a la introducció.",
+          "exemple": "c3"
+        },
+        {
+          "id": "i9",
+          "titol": "Obstinat de fons i veu rapejada",
+          "desc": "Un patró curt es repeteix en bucle i a sobre la veu rapeja.",
+          "com": "El teclat o la guitarra repeteix 2–4 notes sense parar; proveu de rapejar una estrofa a sobre.",
+          "exemple": "c3"
+        },
+        {
+          "id": "i10",
+          "titol": "Versió mínima: veu i guitarra",
+          "desc": "Estrofa i tornada només amb veu i guitarra (o veu i teclat), sense res més.",
+          "com": "Feu una versió «desendollada» de la vostra cançó amb només dos instruments i escolteu què canvia.",
+          "exemple": "c4"
+        },
+        {
+          "id": "i11",
+          "titol": "Acords a contratemps (reggae)",
+          "desc": "La guitarra o el teclat toquen els acords entre els temps, no a sobre.",
+          "com": "Compteu «1 i 2 i 3 i 4 i» i toqueu els acords només a les «i».",
+          "exemple": "c5"
+        },
+        {
+          "id": "i12",
+          "titol": "Veu processada o talls de veu",
+          "desc": "Una veu amb efecte o fragments gravats de diverses veus que s'intercalen.",
+          "com": "Graveu frases curtes amb diferents veus (o amb un efecte al micro) i poseu-les entre les frases de la cançó.",
+          "exemple": "c5"
+        },
+        {
+          "id": "i13",
+          "titol": "Començar a cappella",
+          "desc": "La cançó comença només amb la veu, sense cap instrument.",
+          "com": "Canteu la primera frase sense acompanyament; després la banda entra tota junta.",
+          "exemple": "c6"
+        },
+        {
+          "id": "i14",
+          "titol": "Compte d'entrada amb les baquetes",
+          "desc": "El bateria compta picant les baquetes i tota la banda entra alhora.",
+          "com": "En acabar la introducció, el bateria fa «1, 2, 3, 4» amb les baquetes i entreu tots al primer temps.",
+          "exemple": "c6"
+        }
       ]
     }
   ]

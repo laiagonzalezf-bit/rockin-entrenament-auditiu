@@ -138,11 +138,14 @@ function descsHTML(a){
   }).join("");
 }
 function stepsHTML(a){
-  if (!vocabOf(a).length) return "";
-  const unlocked = state.game && state.game.done;
+  const hasV = vocabOf(a).length > 0, hasI = ideesOf(a).length > 0;
+  if (!hasV && !hasI) return "";
+  const unlocked = state.game && state.game.done, lock = unlocked ? "" : "disabled title=\"Primer acaba la part 1\"";
+  let n = 1;
   return `<nav class="steps" aria-label="Parts de l'activitat">
-    <button type="button" data-part="1" aria-current="${state.part === 1}"><span>1</span> Escolta i relaciona</button>
-    <button type="button" data-part="2" aria-current="${state.part === 2}" ${unlocked ? "" : "disabled title=\"Primer acaba la part 1\""}><span>2</span> Vocabulari musical</button>
+    <button type="button" data-part="1" aria-current="${state.part === 1}"><span>${n++}</span> Escolta i relaciona</button>
+    ${hasV ? `<button type="button" data-part="2" aria-current="${state.part === 2}" ${lock}><span>${n++}</span> Vocabulari musical</button>` : ""}
+    ${hasI ? `<button type="button" data-part="3" aria-current="${state.part === 3}" ${lock}><span>${n++}</span> Idees per compondre</button>` : ""}
   </nav>`;
 }
 function statusHTML(a){
@@ -152,8 +155,9 @@ function statusHTML(a){
     <button type="button" class="btn ghost" id="restart">Torna a començar</button>`;
 }
 function bannerHTML(a){
-  if (state.part === 2) return state.voc.done ? `<div class="banner" role="status"><b>Vocabulari complet!</b><span>Ja domines els conceptes musicals d'aquesta activitat.</span></div>` : "";
-  const next = vocabOf(a).length ? `<button type="button" class="btn next" id="go2">Continua: vocabulari musical →</button>` : "";
+  const go3 = ideesOf(a).length ? `<button type="button" class="btn next" id="go3">Continua: idees per compondre →</button>` : "";
+  if (state.part === 2) return state.voc.done ? `<div class="banner" role="status"><b>Vocabulari complet!</b><span>Ja domines els conceptes musicals d'aquesta activitat.</span>${go3}</div>` : "";
+  const next = vocabOf(a).length ? `<button type="button" class="btn next" id="go2">Continua: vocabulari musical →</button>` : go3;
   return state.game.done ? `<div class="banner" role="status"><b>${esc(a.feedback || "Molt bé!")}</b><span>Ara pots veure el títol de cada cançó i el material extra.</span>${next}</div>` : "";
 }
 function vocabDescsHTML(a){
@@ -188,6 +192,7 @@ function renderGame(){
   if (!a){ app.innerHTML = `<div class="head"><h1>Encara no hi ha activitats</h1><p>Passa a mode professorat per crear-ne una.</p></div>`; return; }
   if (!state.game) newGame(a);
   if (state.part === 2 && state.game.done && vocabOf(a).length) return renderVocab(a);
+  if (state.part === 3 && state.game.done && ideesOf(a).length) return renderIdeas(a);
   state.part = 1;
   const g = state.game;
   const pool = g.order.map(id => {
@@ -255,6 +260,7 @@ app.addEventListener("click", e => {
   if (t.id === "check") return check();
   if (t.id === "restart"){ if (state.part === 2) newVoc(act()); else { newGame(act()); state.voc = null; } return renderKeepPlayers(); }
   if (t.closest("#go2")) return goPart(2);
+  if (t.closest("#go3")) return goPart(3);
   const pb = t.closest("[data-part]"); if (pb){ if (!pb.disabled) goPart(Number(pb.dataset.part)); return; }
   const un = t.closest("[data-unplace]");
   if (un){ const d = un.dataset.unplace, g = G(); if (!g.ok[d]){ delete g.placed[d]; delete g.bad[d]; updateGame(); } return; }
@@ -362,6 +368,18 @@ function renderEditor(){
       </div>`).join("")}
       <div><button class="btn" data-ed="addvoc">+ Afegeix un concepte</button></div>
     </div>
+    <div class="panel"><h2>Part 3 · Idees per compondre (${(a.idees || []).length})</h2>
+      <p class="hint">Recursos que surten a les cançons perquè l'alumnat els triï i els apliqui a la seva cançó. Deixa-ho buit si no vols aquesta part.</p>
+      <label class="f">Instruccions de la part 3<input id="a-iins" data-a="ideesInstructions" value="${esc(a.ideesInstructions || "")}" placeholder="Si ho deixes buit: «Totes aquestes idees han sortit a les cançons que heu escoltat…»"></label>
+      ${(a.idees || []).map((x, n) => `<div class="item idea-ed" data-id="${n}">
+        <div class="item-head"><span class="n">Idea ${n + 1}</span><button class="btn small danger" data-ed="delidea">Elimina</button></div>
+        <div class="row"><label class="f">Idea<input id="it-${x.id}" data-ik="titol" value="${esc(x.titol)}" placeholder="p. ex. Cors que responen al cantant"></label>
+          <label class="f">Cançó d'exemple<select id="ie-${x.id}" data-ik="exemple"><option value="">—</option>${a.items.map((it, k) => `<option value="${it.id}" ${it.id === x.exemple ? "selected" : ""}>${esc(it.title || "Cançó " + (k + 1))}</option>`).join("")}</select></label></div>
+        <label class="f">Què és<textarea id="id-${x.id}" data-ik="desc" placeholder="Explica breument el recurs">${esc(x.desc)}</textarea></label>
+        <label class="f">Com provar-ho<textarea id="ic-${x.id}" data-ik="com" placeholder="Una pista pràctica per a la banda">${esc(x.com)}</textarea></label>
+      </div>`).join("")}
+      <div><button class="btn" data-ed="addidea">+ Afegeix una idea</button></div>
+    </div>
   </div>${saveBar()}`;
 }
 function saveBar(){
@@ -378,6 +396,8 @@ app.addEventListener("input", e => {
   if (state.mode !== "prof") return;
   const t = e.target, a = draftAct(); if (!a) return;
   if (t.dataset.a){ a[t.dataset.a] = t.type === "checkbox" ? t.checked : t.value; if (t.dataset.a === "title") renderTabs(); return markDirty(); }
+  const ib = t.closest("[data-id]");
+  if (ib && t.dataset.ik){ a.idees[Number(ib.dataset.id)][t.dataset.ik] = t.value; return markDirty(); }
   const vb = t.closest("[data-v]");
   if (vb && t.dataset.vk){ a.vocab[Number(vb.dataset.v)][t.dataset.vk] = t.value; return markDirty(); }
   const box = t.closest("[data-i]"); if (!box) return;
@@ -397,6 +417,8 @@ app.addEventListener("click", async e => {
   switch (op){
     case "additem": a.items.push(blankItem()); break;
     case "addvoc": (a.vocab ||= []).push(blankVoc()); break;
+    case "addidea": (a.idees ||= []).push({id: "i" + uid(), titol: "", desc: "", com: "", exemple: ""}); break;
+    case "delidea": a.idees.splice(Number(b.closest("[data-id]").dataset.id), 1); break;
     case "delvoc": a.vocab.splice(Number(b.closest("[data-v]").dataset.v), 1); break;
     case "delitem": if (a.items.length <= 2){ toast("Una activitat necessita com a mínim dues cançons."); return; } a.items.splice(n, 1); break;
     case "up": [a.items[n - 1], a.items[n]] = [a.items[n], a.items[n - 1]]; break;
@@ -404,7 +426,7 @@ app.addEventListener("click", async e => {
     case "addxv": (a.items[n].extraVideos ||= []).push(""); break;
     case "delxv": a.items[n].extraVideos.splice(Number(b.dataset.k2), 1); break;
     case "newact": { const x = blankAct(); L.push(x); state.actId = x.id; break; }
-    case "dupact": { const x = clone(a); x.id = "a" + uid(); x.title = a.title + " (còpia)"; x.items.forEach(i => i.id = "c" + uid()); (x.vocab || []).forEach(v => v.id = "v" + uid()); L.push(x); state.actId = x.id; break; }
+    case "dupact": { const x = reId(clone(a)); x.title = a.title + " (còpia)"; L.push(x); state.actId = x.id; break; }
     case "delact": {
       if (b.dataset.confirm !== "1"){ b.dataset.confirm = "1"; b.textContent = "Segur? Toca per eliminar"; return; }
       L.splice(L.indexOf(a), 1); state.actId = L[0] ? L[0].id : null; break;
@@ -470,6 +492,7 @@ function cleanAct(a){
   const x = clone(a);
   x.items.forEach(i => i.extraVideos = (i.extraVideos || []).filter(v => String(v).trim()));
   x.vocab = (x.vocab || []).filter(v => String(v.term).trim() && String(v.def).trim());
+  x.idees = (x.idees || []).filter(i => String(i.titol).trim());
   return x;
 }
 function actError(a){
@@ -491,6 +514,125 @@ async function shareLink(a){
     <a class="btn small" href="${esc(url)}" target="_blank" rel="noopener">Prova-ho com l'alumnat ↗</a>
   </div>`;
   const inp = $("#share-url"); inp.addEventListener("focus", () => inp.select()); if (!copied) inp.focus();
+}
+
+/* ---------- part 3: idees per compondre ---------- */
+function ideesOf(a){ return (a && Array.isArray(a.idees) ? a.idees : []).filter(x => x.titol); }
+function reId(a){
+  const map = {};
+  a.id = "a" + uid();
+  a.items.forEach(i => { const n = "c" + uid(); map[i.id] = n; i.id = n; });
+  (a.vocab || []).forEach(v => v.id = "v" + uid());
+  (a.idees || []).forEach(x => { x.id = "i" + uid(); if (x.exemple) x.exemple = map[x.exemple] || ""; });
+  return a;
+}
+function ideaState(){ return state.ideas || (state.ideas = {sel: [], desti: "actual", canco: "", banda: ""}); }
+function renderIdeas(a){
+  const s = ideaState(), L = ideesOf(a);
+  const card = x => {
+    const on = s.sel.includes(x.id), ex = a.items.find(i => i.id === x.exemple);
+    return `<label class="idea${on ? " on" : ""}">
+      <input type="checkbox" data-idea="${x.id}" ${on ? "checked" : ""}>
+      <span class="idea-body"><b>${esc(x.titol)}</b>
+        ${x.desc ? `<span>${esc(x.desc)}</span>` : ""}
+        ${ex && ex.title ? `<small>🎧 Com a ${esc(ex.title)}</small>` : ""}</span>
+    </label>`;
+  };
+  app.innerHTML = `
+    <div class="head">
+      ${stepsHTML(a)}
+      <h1>Idees per a la nostra cançó</h1>
+      <p>${esc(a.ideesInstructions || "Totes aquestes idees han sortit a les cançons que heu escoltat. Trieu-ne les que us agradin i apliqueu-les a la cançó que esteu tocant o a una de nova.")}</p>
+      <div class="status"><span class="meter"><b id="idea-n">${s.sel.length}</b> idees triades</span>
+        <button type="button" class="btn ghost" id="idea-rand">🎲 Sorprèn-me amb 3 idees</button></div>
+    </div>
+    <div class="game ideas">
+      <section aria-label="Banc d'idees"><h2 class="col-title">Banc d'idees</h2><div class="idea-list">${L.map(card).join("")}</div></section>
+      <section aria-label="El nostre repte"><h2 class="col-title">El nostre repte</h2>
+        <div class="panel repte">
+          <fieldset class="desti"><legend>On les aplicarem?</legend>
+            <label class="check"><input type="radio" name="desti" value="actual" ${s.desti === "actual" ? "checked" : ""}> A la cançó que estem tocant</label>
+            <label class="check"><input type="radio" name="desti" value="nova" ${s.desti === "nova" ? "checked" : ""}> En una cançó nova</label>
+          </fieldset>
+          <div class="row">
+            <label class="f">${s.desti === "nova" ? "Títol provisional (opcional)" : "Quina cançó?"}<input id="idea-canco" value="${esc(s.canco)}" placeholder="${s.desti === "nova" ? "p. ex. La nostra primera cançó" : "p. ex. Sense tu"}"></label>
+            <label class="f">Grup o banda<input id="idea-banda" value="${esc(s.banda)}" placeholder="p. ex. 3r B · Grup 2"></label>
+          </div>
+          <div id="repte-llista">${repteHTML(a)}</div>
+          <div class="share-row"><button type="button" class="btn primary" id="idea-print" ${s.sel.length ? "" : "disabled"}>🖨️ Imprimeix el repte</button><button type="button" class="btn" id="idea-copy" ${s.sel.length ? "" : "disabled"}>📋 Copia el text</button></div>
+        </div>
+      </section>
+    </div>`;
+}
+function repteHTML(a){
+  const s = ideaState(), L = ideesOf(a).filter(x => s.sel.includes(x.id));
+  if (!L.length) return `<p class="hint">Marqueu les idees que voleu provar. Us recomanem començar amb 2 o 3.</p>`;
+  return `<ol class="repte-ol">${L.map(x => `<li><b>${esc(x.titol)}</b>${x.com ? `<span>${esc(x.com)}</span>` : ""}</li>`).join("")}</ol>`;
+}
+function repteText(a){
+  const s = ideaState(), L = ideesOf(a).filter(x => s.sel.includes(x.id));
+  const on = s.desti === "nova" ? `una cançó nova${s.canco ? ` («${s.canco}»)` : ""}` : `la cançó que estem tocant${s.canco ? `: «${s.canco}»` : ""}`;
+  return [`El nostre repte de composició${s.banda ? " — " + s.banda : ""}`, `Aplicarem aquestes idees a ${on}:`, ...L.map((x, n) => `${n + 1}. ${x.titol}${x.com ? " — " + x.com : ""}`), "", `Idees sortides de l'activitat «${a.title}» (Rockin)`].join("\n");
+}
+function refreshIdeas(a){
+  const s = ideaState();
+  document.querySelectorAll("[data-idea]").forEach(c => { c.checked = s.sel.includes(c.dataset.idea); c.closest(".idea").classList.toggle("on", c.checked); });
+  $("#idea-n").textContent = s.sel.length;
+  $("#repte-llista").innerHTML = repteHTML(a);
+  $("#idea-print").disabled = $("#idea-copy").disabled = !s.sel.length;
+}
+app.addEventListener("change", e => {
+  if (state.mode !== "alumne" || state.part !== 3) return;
+  const a = act(), s = ideaState(), t = e.target;
+  if (t.dataset.idea){ s.sel = t.checked ? [...s.sel, t.dataset.idea] : s.sel.filter(x => x !== t.dataset.idea); refreshIdeas(a); }
+  else if (t.name === "desti"){ s.desti = t.value; renderIdeas(a); }
+});
+app.addEventListener("input", e => {
+  if (state.mode !== "alumne" || state.part !== 3) return;
+  if (e.target.id === "idea-canco") ideaState().canco = e.target.value;
+  if (e.target.id === "idea-banda") ideaState().banda = e.target.value;
+});
+app.addEventListener("click", async e => {
+  if (state.mode !== "alumne" || state.part !== 3) return;
+  const a = act(), s = ideaState(), t = e.target;
+  if (t.id === "idea-rand"){ s.sel = shuffle(ideesOf(a).map(x => x.id)).slice(0, 3); refreshIdeas(a); }
+  else if (t.id === "idea-copy"){ try { await navigator.clipboard.writeText(repteText(a)); toast("Repte copiat! Ara el podeu enganxar on vulgueu."); } catch (err){ prompt("Copieu aquest text:", repteText(a)); } }
+  else if (t.id === "idea-print") printRepte(a);
+});
+function printRepte(a){
+  const s = ideaState(), L = ideesOf(a).filter(x => s.sel.includes(x.id));
+  const on = s.desti === "nova" ? `Una cançó nova${s.canco ? `: <b>${esc(s.canco)}</b>` : ""}` : `La cançó que estem tocant${s.canco ? `: <b>${esc(s.canco)}</b>` : ""}`;
+  const html = `<!doctype html><html lang="ca"><head><meta charset="utf-8"><title>El nostre repte de composició</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lora:wght@700&family=Ubuntu:wght@400;500;700&display=swap">
+<style>
+@page{size:A4;margin:14mm}
+body{-webkit-print-color-adjust:exact;print-color-adjust:exact;font-family:Ubuntu,Helvetica,Arial,sans-serif;color:#221F20;font-size:11pt;line-height:1.45;margin:0}
+.cap{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #FDBE10;padding-bottom:8px}
+.cap img{height:46px;background:#FDBE10;padding:6px 12px;border-radius:2px}
+h1{font-family:Lora,Georgia,serif;font-size:21pt;margin:12px 0 2px}
+.sub{color:#555;margin:0 0 12px}
+ol{padding:0;margin:0;list-style:none;display:grid;gap:10px;counter-reset:n}
+li{border:1.5px solid #221F20;border-radius:3px;padding:10px 12px;break-inside:avoid;counter-increment:n}
+li h2{font-family:Lora,Georgia,serif;font-size:13pt;margin:0 0 3px}
+li h2::before{content:counter(n);display:inline-block;background:#FDBE10;min-width:1.5em;text-align:center;margin-right:8px;border-radius:2px}
+li p{margin:0 0 6px}
+.marques{display:flex;gap:18px;font-size:10pt;color:#333}
+.marques span::before{content:"";display:inline-block;width:11px;height:11px;border:1.5px solid #221F20;margin-right:5px;vertical-align:-1px}
+.notes{margin-top:14px;border:1px dashed #999;height:48mm;padding:8px;color:#777;font-size:10pt}
+footer{margin-top:12px;font-size:8pt;color:#777}
+@media screen{body{max-width:190mm;margin:16px auto;padding:0 12px}}
+</style></head><body>
+<header class="cap"><img src="https://rockin.cat/wp-content/uploads/2022/07/rockin-logo.svg" alt="Rockin"><div>${s.banda ? `Grup: <b>${esc(s.banda)}</b>` : ""}</div></header>
+<h1>El nostre repte de composició</h1>
+<p class="sub">${on} · Idees sortides de l'activitat «${esc(a.title)}»</p>
+<ol>${L.map(x => { const ex = a.items.find(i => i.id === x.exemple); return `<li><h2>${esc(x.titol)}</h2>${x.desc ? `<p>${esc(x.desc)}</p>` : ""}${x.com ? `<p><b>Com provar-ho:</b> ${esc(x.com)}</p>` : ""}${ex && ex.title ? `<p><small>🎧 Exemple: ${esc(ex.title)}</small></p>` : ""}<div class="marques"><span>Ho hem provat</span><span>Ens agrada</span><span>Ho deixem</span></div></li>`; }).join("")}</ol>
+<div class="notes">Notes del grup: qui fa què, en quina part de la cançó, què hem canviat…</div>
+<footer>© Rockin SCCL · CC BY-SA 4.0 · rockin-cat.github.io/entrenament-auditiu</footer>
+<script>window.addEventListener("load",()=>setTimeout(()=>window.print(),400));<\/script>
+</body></html>`;
+  const w = window.open("", "_blank");
+  if (!w){ toast("El navegador ha bloquejat la finestra. Permet les finestres emergents per imprimir."); return; }
+  w.document.open(); w.document.write(html); w.document.close();
 }
 
 /* ---------- versió imprimible (fitxa de l'alumnat i full del docent) ---------- */
@@ -669,7 +811,7 @@ document.addEventListener("click", async e => {
     const j = await peticioBiblio("GET", {id}); if (!j.ok || !j.activitat) throw new Error(j.error || "error");
     const a = j.activitat;
     if (add){
-      a.id = "a" + uid(); a.items.forEach(i => i.id = "c" + uid()); (a.vocab || []).forEach(v => v.id = "v" + uid());
+      reId(a);
       if (!state.draft) state.draft = clone(DATA);
       state.draft.activitats.push(a); state.actId = a.id; stash();
       $("#modal").hidden = true; state.msg = `S'ha afegit «${a.title}» a les teves activitats.`; renderEditorKeep(); window.scrollTo(0, 0);
@@ -699,12 +841,12 @@ $("#modes").addEventListener("click", e => {
   stopAll();
   state.mode = b.dataset.mode;
   if (state.mode === "prof" && !state.draft) state.draft = clone(DATA);
-  if (state.mode === "alumne"){ if (!SRC().activitats.some(a => a.id === state.actId)) state.actId = SRC().activitats[0]?.id || null; state.game = null; state.voc = null; state.part = 1; }
+  if (state.mode === "alumne"){ if (!SRC().activitats.some(a => a.id === state.actId)) state.actId = SRC().activitats[0]?.id || null; state.game = null; state.voc = null; state.ideas = null; state.part = 1; }
   render(); window.scrollTo(0, 0);
 });
 $("#acts").addEventListener("click", e => {
   const b = e.target.closest("[data-act]"); if (!b) return;
-  stopAll(); state.actId = b.dataset.act; state.game = null; state.voc = null; state.part = 1; render();
+  stopAll(); state.actId = b.dataset.act; state.game = null; state.voc = null; state.ideas = null; state.part = 1; render();
 });
 
 /* teacher's own activities, kept in this browser */
