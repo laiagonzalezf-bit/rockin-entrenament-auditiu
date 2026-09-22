@@ -1,0 +1,42 @@
+/* Imatge de marca Rockin (colors i tipografies de rockin.cat) */
+:root{
+  --ground:#FAF8F3; --surface:#FFFFFF; --surface-2:#F4F1EA; --ink:#221F20; --muted:#6B6461; --line:#E2DDD3;
+  --accent:#221F20; --accent-ink:#FDBE10; --accent-soft:#FFF1C7; --tape:#FDBE10; --tape-ink:#221F20;
+  --display:"Lora",Georgia,"Times New Roman",serif;
+  --body:"Ubuntu",Helvetica,Arial,sans-serif;
+  --mono:"Ubuntu Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#171414; --surface:#221F20; --surface-2:#2B2725; --ink:#F3EFE8; --muted:#A8A09A; --line:#3A3432;
+    --accent:#FDBE10; --accent-ink:#221F20; --accent-soft:#3A3014; --tape:#FDBE10; --tape-ink:#221F20;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#171414; --surface:#221F20; --surface-2:#2B2725; --ink:#F3EFE8; --muted:#A8A09A; --line:#3A3432;
+  --accent:#FDBE10; --accent-ink:#221F20; --accent-soft:#3A3014; --tape:#FDBE10; --tape-ink:#221F20;
+}
+/* franja groga de capçalera, com a rockin.cat */
+body{padding-inline:0;margin:0}
+.pool{grid-template-columns:repeat(auto-fill,minmax(190px,1fr))}
+.cover .ctrls{flex-wrap:wrap;justify-content:center;padding-inline:6px}
+.topbar{background:#FDBE10;color:#221F20;padding-inline:16px}
+.topbar .bar{max-width:1180px;margin:0 auto;border-bottom:0;padding-block:12px}
+.wrap{padding-inline:16px}
+.brand{align-items:center;gap:14px;text-decoration:none;color:inherit}
+.brand img{height:44px;width:auto;display:block}
+.brand b{font-family:var(--display)}
+.brand span{color:#221F20;opacity:.75;font-family:var(--body);font-weight:500}
+.modes{background:#FFFFFF;border-color:#221F20}
+.modes button{color:#221F20}
+.modes button[aria-pressed="true"]{background:#221F20;color:#FDBE10}
+.head h1{font-weight:700;letter-spacing:-.01em}
+.btn,.btn.small{border-radius:2px}
+.btn.primary{font-weight:700}
+.tag{font-family:var(--body);font-weight:700}
+.cover{background:repeating-linear-gradient(90deg,#2B2523 0 2px,#221F20 2px 9px)}
+.cover .big{font-family:var(--display)}
+.cover button.play{background:#FDBE10;border-color:#FDBE10;color:#221F20}
+.banner{background:#FDBE10;color:#221F20}
+.frag,.desc,.panel{border-radius:4px}
+.slot{border-radius:3px}
