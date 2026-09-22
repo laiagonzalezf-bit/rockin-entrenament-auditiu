@@ -549,7 +549,7 @@ function printSheet(a, docentView, docent, grup, ordre){
 *{box-sizing:border-box}
 body{-webkit-print-color-adjust:exact;print-color-adjust:exact;font-family:Ubuntu,Helvetica,Arial,sans-serif;color:#221F20;font-size:10.5pt;line-height:1.4;margin:0}
 .cap{display:flex;justify-content:space-between;align-items:center;gap:16px;border-bottom:3px solid #FDBE10;padding-bottom:8px}
-.cap img{height:34px}
+.cap img{height:46px;background:#FDBE10;padding:6px 12px;border-radius:2px}
 .dades{display:grid;gap:4px;text-align:right;font-size:10pt}
 .linia{display:inline-block;width:62mm;border-bottom:1px solid #221F20;height:1em;vertical-align:bottom}
 .linia.curta{width:28mm}
