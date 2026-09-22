@@ -155,3 +155,22 @@ label.f textarea{min-height:88px;resize:vertical}
 @media (max-width:520px){.desc.def{grid-template-columns:minmax(0,1fr)}.slot.wide{min-width:0}}
 .ghost-drag{white-space:nowrap}
 .frag.term.placed,.frag.term.locked{opacity:1}
+
+/* compartir i biblioteca */
+.panel.share{background:var(--accent-soft);border-color:color-mix(in srgb,var(--tape) 55%,var(--line))}
+.share-row{display:flex;flex-wrap:wrap;gap:8px}
+.share-link,.share-form{display:grid;gap:10px;padding-top:4px}
+.share-link input{font-family:var(--mono);font-size:13px}
+.ok-msg{margin:0;font-weight:600;color:var(--ok)}
+.modal{position:fixed;inset:0;z-index:70;background:rgba(20,18,18,.55);display:flex;align-items:flex-start;justify-content:center;padding:calc(24px + env(safe-area-inset-top,0px)) 16px 24px;overflow-y:auto}
+.modal-box{background:var(--surface);color:var(--ink);border-radius:6px;width:100%;max-width:760px;padding:18px;display:grid;gap:12px;box-shadow:var(--shadow)}
+.modal-head{display:flex;align-items:center;gap:10px}
+.modal-head h2{margin:0;margin-right:auto;font-family:var(--display);font-size:22px}
+.modal-foot{display:flex;justify-content:flex-end}
+.bib-cerca{border:1px solid var(--line);background:var(--surface-2);border-radius:4px;padding:9px 12px;width:100%;font-size:15px}
+.bib-llista{display:grid;gap:8px;max-height:60vh;overflow-y:auto}
+.bib-fila{display:flex;flex-wrap:wrap;gap:10px;align-items:center;border:1px solid var(--line);border-radius:4px;padding:10px 12px}
+.bib-info{display:grid;gap:2px;margin-right:auto;min-width:0}
+.bib-info span{font-size:14px;color:var(--muted)}
+.bib-info .meta{font-size:12px}
+.bib-acc{display:flex;flex-wrap:wrap;gap:6px}

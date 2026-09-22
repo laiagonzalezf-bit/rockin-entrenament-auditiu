@@ -8,6 +8,12 @@ const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 let DATA = {activitats: []};
 const TEACHER = new URLSearchParams(location.search).has("professorat");
+// Adreça de l'aplicació web de Google Apps Script de la biblioteca (Implementa → Aplicació web).
+const URL_BIBLIOTECA = "";
+const K_DRAFT = "ea-meves-activitats", K_CODI = "ea-codi-biblioteca", K_AUTOR = "ea-autor";
+let SHARED = false;   // true quan la pàgina s'obre amb un enllaç d'activitat (#a=...)
+function llegirLocal(k){ try { return localStorage.getItem(k) || ""; } catch (e) { return ""; } }
+function escriureLocal(k, v){ try { v ? localStorage.setItem(k, v) : localStorage.removeItem(k); } catch (e) {} }
 
 const app = $("#app");
 const state = {
@@ -49,7 +55,8 @@ function watchUrl(url, start){
   return "https://www.youtube.com/watch?v=" + id + (s ? "&t=" + s + "s" : "");
 }
 function shuffle(a){ a = a.slice(); for (let i = a.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
-function act(){ return DATA.activitats.find(a => a.id === state.actId) || DATA.activitats[0]; }
+function SRC(){ return (TEACHER && !SHARED && state.draft) ? state.draft : DATA; }
+function act(){ const L = SRC().activitats; return L.find(a => a.id === state.actId) || L[0]; }
 function toast(t){
   let el = $(".toast"); if (!el){ el = document.createElement("div"); el.className = "toast"; el.setAttribute("role", "status"); document.body.appendChild(el); }
   el.textContent = t; el.hidden = false; clearTimeout(toast._t); toast._t = setTimeout(() => el.hidden = true, 2800);
@@ -323,6 +330,16 @@ function renderEditor(){
     </div>`;
   }).join("");
   app.innerHTML = `<div class="editor">
+    <div class="panel share">
+      <h2>Comparteix aquesta activitat</h2>
+      <div class="share-row">
+        <button class="btn primary" data-ed="link">🔗 Enllaç per a l'alumnat</button>
+        <button class="btn" data-ed="publish">📤 Comparteix a la biblioteca</button>
+        <button class="btn" data-ed="biblio">📚 Biblioteca de propostes</button>
+      </div>
+      <div id="share-out"></div>
+      <p class="hint">L'enllaç porta l'activitat a dins: l'alumnat l'obre directament, sense cap altra activitat ni el mode professorat. Els canvis que facis es guarden en aquest navegador.</p>
+    </div>
     <div class="panel">
       <h2>Activitat</h2>
       <label class="f">Títol<input id="a-title" data-a="title" value="${esc(a.title)}"></label>
@@ -347,14 +364,14 @@ function renderEditor(){
   </div>${saveBar()}`;
 }
 function saveBar(){
-  const m = state.msg || (state.dirty ? "Tens canvis sense desar." : "Quan acabis, descarrega el fitxer i puja'l a GitHub.");
+  const m = state.msg || "Els canvis es guarden automàticament en aquest navegador.";
   return `<div class="savebar"><span class="msg" role="status">${esc(m)}</span>
     <button class="btn" data-ed="newact">+ Nova activitat</button>
-    <button class="btn ghost" data-ed="discard" ${state.dirty ? "" : "disabled"}>Descarta</button>
-    <button class="btn primary" data-ed="save" >Descarrega activitats.json</button></div>`;
+    <button class="btn ghost" data-ed="discard" title="Esborra els canvis d'aquest navegador i torna a les activitats oficials">Restaura les oficials</button>
+    <button class="btn ghost" data-ed="save" title="Per a qui gestiona el repositori de Rockin">Descarrega activitats.json</button></div>`;
 }
-function markDirty(){ state.dirty = true; state.msg = ""; const b = $('[data-ed="save"]'); if (b && !state.readOnly) b.disabled = false; const d = $('[data-ed="discard"]'); if (d) d.disabled = false; const m = $(".savebar .msg"); if (m && !state.readOnly) m.textContent = "Tens canvis sense desar."; stash(); }
-function stash(){ try { sessionStorage.setItem("ea-draft", JSON.stringify({d: state.draft, act: state.actId})); } catch (e) {} }
+function markDirty(){ state.dirty = true; state.msg = ""; const m = $(".savebar .msg"); if (m) m.textContent = "Desat en aquest navegador."; stash(); }
+function stash(){ escriureLocal(K_DRAFT, JSON.stringify({d: state.draft, act: state.actId})); }
 
 app.addEventListener("input", e => {
   if (state.mode !== "prof") return;
@@ -391,8 +408,13 @@ app.addEventListener("click", async e => {
       if (b.dataset.confirm !== "1"){ b.dataset.confirm = "1"; b.textContent = "Segur? Toca per eliminar"; return; }
       L.splice(L.indexOf(a), 1); state.actId = L[0] ? L[0].id : null; break;
     }
-    case "discard": state.draft = clone(DATA); state.dirty = false; state.msg = "Canvis descartats."; try { sessionStorage.removeItem("ea-draft"); } catch (e) {} if (!DATA.activitats.some(x => x.id === state.actId)) state.actId = DATA.activitats[0]?.id || null; renderEditorKeep(); return;
+    case "discard":
+      if (b.dataset.confirm !== "1"){ b.dataset.confirm = "1"; b.textContent = "Segur? Es perdran els teus canvis"; return; }
+      state.draft = clone(DATA); state.dirty = false; state.msg = "S'han restaurat les activitats oficials."; escriureLocal(K_DRAFT, ""); if (!DATA.activitats.some(x => x.id === state.actId)) state.actId = DATA.activitats[0]?.id || null; renderEditorKeep(); return;
     case "save": return save();
+    case "link": return shareLink(a);
+    case "publish": return publishAct(a);
+    case "biblio": return openLibrary();
   }
   markDirty(); renderEditorKeep();
 });
@@ -423,19 +445,161 @@ async function save(){
   const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "activitats.json";
   document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
   try { await navigator.clipboard.writeText(text); } catch (e) {}
-  state.dirty = false; try { sessionStorage.removeItem("ea-draft"); } catch (e) {}
-  state.msg = "S'ha descarregat activitats.json. Puja'l al repositori de GitHub per publicar els canvis.";
+    state.msg = "S'ha descarregat activitats.json. Puja'l al repositori de GitHub per publicar els canvis.";
   const gh = githubEditUrl(); if (gh) window.open(gh, "_blank", "noopener");
   renderEditorKeep();
 }
 
+/* ---------- compartir: enllaç per a l'alumnat ---------- */
+function b64url(buf){ let s = ""; const b = new Uint8Array(buf); for (let i = 0; i < b.length; i++) s += String.fromCharCode(b[i]); return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); }
+function unb64url(t){ t = t.replace(/-/g, "+").replace(/_/g, "/"); while (t.length % 4) t += "="; return Uint8Array.from(atob(t), c => c.charCodeAt(0)); }
+async function packAct(a){
+  const json = JSON.stringify(cleanAct(a));
+  if (typeof CompressionStream === "undefined") return "j" + b64url(new TextEncoder().encode(json));
+  const buf = await new Response(new Blob([json]).stream().pipeThrough(new CompressionStream("deflate-raw"))).arrayBuffer();
+  return "z" + b64url(buf);
+}
+async function unpackAct(t){
+  const kind = t[0], bytes = unb64url(t.slice(1));
+  const json = kind === "z" ? await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate-raw"))).text() : new TextDecoder().decode(bytes);
+  return JSON.parse(json);
+}
+function cleanAct(a){
+  const x = clone(a);
+  x.items.forEach(i => i.extraVideos = (i.extraVideos || []).filter(v => String(v).trim()));
+  x.vocab = (x.vocab || []).filter(v => String(v.term).trim() && String(v.def).trim());
+  return x;
+}
+function actError(a){
+  if (!a.title.trim()) return "L'activitat necessita un títol.";
+  if (a.items.length < 2) return "L'activitat necessita com a mínim dues cançons.";
+  for (const [n, it] of a.items.entries()){
+    if (!ytId(it.video)) return `Cançó ${n + 1}: falta un enllaç de YouTube vàlid.`;
+    if (!it.desc.trim()) return `Cançó ${n + 1}: falta la descripció.`;
+  }
+  return null;
+}
+function studentUrl(packed){ return location.origin + location.pathname + "#a=" + packed; }
+async function shareLink(a){
+  const err = actError(a); if (err){ toast(err); return; }
+  const url = studentUrl(await packAct(a));
+  let copied = false; try { await navigator.clipboard.writeText(url); copied = true; } catch (e) {}
+  $("#share-out").innerHTML = `<div class="share-link">
+    <label class="f">${copied ? "Enllaç copiat! Enganxa'l al Classroom, al correu o on vulguis." : "Copia aquest enllaç:"}<input id="share-url" readonly value="${esc(url)}"></label>
+    <a class="btn small" href="${esc(url)}" target="_blank" rel="noopener">Prova-ho com l'alumnat ↗</a>
+  </div>`;
+  const inp = $("#share-url"); inp.addEventListener("focus", () => inp.select()); if (!copied) inp.focus();
+}
+
+/* ---------- biblioteca de propostes (Google Apps Script + Drive) ---------- */
+let biblioLlista = [];
+function codiBiblio(forcar){
+  let c = forcar ? "" : llegirLocal(K_CODI);
+  if (!c){ c = (prompt("Escriu el codi del professorat per accedir a la biblioteca de propostes:") || "").trim(); if (c) escriureLocal(K_CODI, c); }
+  return c;
+}
+async function peticioBiblio(metode, dades){
+  if (!URL_BIBLIOTECA) throw new Error("no-config");
+  const codi = codiBiblio(false); if (!codi) throw new Error("sense-codi");
+  let r;
+  if (metode === "GET") r = await fetch(URL_BIBLIOTECA + "?" + new URLSearchParams({codi, ...(dades || {})}));
+  else r = await fetch(URL_BIBLIOTECA, {method: "POST", headers: {"Content-Type": "text/plain;charset=utf-8"}, body: JSON.stringify({codi, ...dades})});
+  const j = await r.json();
+  if (!j.ok && j.error === "codi"){ escriureLocal(K_CODI, ""); throw new Error("codi"); }
+  return j;
+}
+function missatgeError(e){
+  const m = e && e.message;
+  if (m === "no-config") return "La biblioteca encara no està connectada. Cal posar l'adreça de l'script de Google a URL_BIBLIOTECA (app.js).";
+  if (m === "codi") return "El codi del professorat no és correcte.";
+  if (m === "sense-codi") return "Cal el codi del professorat.";
+  if (m === "existeix") return "Ja hi ha una proposta amb aquest títol i autoria.";
+  return "No s'ha pogut connectar amb la biblioteca. Torna-ho a provar d'aquí a una estona.";
+}
+async function publishAct(a){
+  const err = actError(a); if (err){ toast(err); return; }
+  const out = $("#share-out");
+  out.innerHTML = `<div class="share-form">
+    <div class="row">
+      <label class="f">Autor/a (com vols que surti)<input id="pub-autor" value="${esc(llegirLocal(K_AUTOR))}" placeholder="Nom i cognom"></label>
+      <label class="f">Curs o nivell (opcional)<input id="pub-curs" placeholder="p. ex. 2n ESO"></label>
+    </div>
+    <label class="f">Centre (opcional)<input id="pub-centre" placeholder="p. ex. Institut Margarida Xirgu"></label>
+    <div class="share-row"><button class="btn primary" id="pub-go">Publica a la biblioteca</button><button class="btn ghost" id="pub-cancel">Cancel·la</button></div>
+  </div>`;
+  $("#pub-cancel").onclick = () => out.innerHTML = "";
+  $("#pub-go").onclick = async () => {
+    const autor = $("#pub-autor").value.trim(); if (!autor){ toast("Escriu el teu nom."); return; }
+    escriureLocal(K_AUTOR, autor);
+    const act = cleanAct(a);
+    const info = {titol: act.title, autor, curs: $("#pub-curs").value.trim(), centre: $("#pub-centre").value.trim(), cancons: act.items.length, conceptes: act.vocab.length};
+    const nom = act.title + " - " + autor;
+    const envia = async sobreescriure => peticioBiblio("POST", {nom, sobreescriure, activitat: act, info});
+    $("#pub-go").disabled = true; $("#pub-go").textContent = "Publicant…";
+    try {
+      let j = await envia(false);
+      if (!j.ok && j.error === "existeix" && confirm("Ja has compartit una proposta amb aquest títol. Vols substituir-la per aquesta versió?")) j = await envia(true);
+      if (!j.ok) throw new Error(j.error || "error");
+      biblioLlista = [];
+      out.innerHTML = `<p class="ok-msg">✅ «${esc(act.title)}» ja és a la biblioteca de propostes.</p>`;
+    } catch (e){ out.innerHTML = `<p class="warn">${esc(missatgeError(e))}</p>`; }
+  };
+}
+function modal(html){
+  let m = $("#modal"); if (!m){ m = document.createElement("div"); m.id = "modal"; m.className = "modal"; m.setAttribute("role", "dialog"); m.setAttribute("aria-modal", "true"); document.body.appendChild(m);
+    m.addEventListener("click", e => { if (e.target === m || e.target.closest("[data-close]")) m.hidden = true; }); }
+  m.innerHTML = `<div class="modal-box">${html}</div>`; m.hidden = false; return m;
+}
+async function openLibrary(refresh){
+  const m = modal(`<div class="modal-head"><h2>📚 Biblioteca de propostes</h2><button class="btn small ghost" data-close>Tanca</button></div>
+    <p class="hint">Activitats que ha compartit el professorat. Pots afegir-ne una a les teves per adaptar-la, o treure'n directament l'enllaç per a l'alumnat.</p>
+    <input id="bib-cerca" class="bib-cerca" placeholder="Cerca per títol, autor/a, curs o centre…" aria-label="Cerca">
+    <div id="bib-llista" class="bib-llista"><p class="hint">Carregant…</p></div>
+    <div class="modal-foot"><button class="btn small ghost" id="bib-codi">🔑 Canvia el codi</button></div>`);
+  $("#bib-codi", m).onclick = () => { if (codiBiblio(true)) openLibrary(true); };
+  $("#bib-cerca", m).oninput = pintaBiblio;
+  if (biblioLlista.length && !refresh) return pintaBiblio();
+  try { const j = await peticioBiblio("GET"); if (!j.ok) throw new Error(j.error); biblioLlista = j.llista || []; pintaBiblio(); }
+  catch (e){ $("#bib-llista").innerHTML = `<p class="warn">${esc(missatgeError(e))}</p>`; }
+}
+function pintaBiblio(){
+  const q = ($("#bib-cerca")?.value || "").toLowerCase().trim();
+  const L = biblioLlista.filter(x => !q || [x.titol, x.autor, x.curs, x.centre, x.nom].join(" ").toLowerCase().includes(q));
+  $("#bib-llista").innerHTML = L.length ? L.map(x => `<div class="bib-fila">
+      <div class="bib-info"><b>${esc(x.titol || x.nom)}</b>
+        <span>${esc([x.autor, x.centre, x.curs].filter(Boolean).join(" · "))}</span>
+        <span class="meta">${x.cancons || "?"} cançons${x.conceptes ? ` · ${x.conceptes} conceptes` : ""} · ${esc((x.data || "").slice(0, 10))}</span></div>
+      <div class="bib-acc"><button class="btn small" data-bib-add="${esc(x.id)}">Afegeix a les meves</button><button class="btn small ghost" data-bib-link="${esc(x.id)}">🔗 Enllaç alumnat</button></div>
+    </div>`).join("") : `<p class="hint">${biblioLlista.length ? "Cap proposta coincideix amb la cerca." : "Encara no hi ha cap proposta. Sigues la primera persona a compartir-ne una!"}</p>`;
+}
+document.addEventListener("click", async e => {
+  const add = e.target.closest("[data-bib-add]"), lnk = e.target.closest("[data-bib-link]");
+  if (!add && !lnk) return;
+  const btn = add || lnk, id = btn.dataset.bibAdd || btn.dataset.bibLink, txt = btn.textContent;
+  btn.disabled = true; btn.textContent = "…";
+  try {
+    const j = await peticioBiblio("GET", {id}); if (!j.ok || !j.activitat) throw new Error(j.error || "error");
+    const a = j.activitat;
+    if (add){
+      a.id = "a" + uid(); a.items.forEach(i => i.id = "c" + uid()); (a.vocab || []).forEach(v => v.id = "v" + uid());
+      if (!state.draft) state.draft = clone(DATA);
+      state.draft.activitats.push(a); state.actId = a.id; stash();
+      $("#modal").hidden = true; state.msg = `S'ha afegit «${a.title}» a les teves activitats.`; renderEditorKeep(); window.scrollTo(0, 0);
+      return;
+    }
+    const url = studentUrl(await packAct(a));
+    try { await navigator.clipboard.writeText(url); toast("Enllaç per a l'alumnat copiat!"); } catch (err){ prompt("Copia aquest enllaç:", url); }
+  } catch (err){ toast(missatgeError(err)); }
+  btn.disabled = false; btn.textContent = txt;
+});
+
 /* ---------- chrome ---------- */
 function renderModes(){
-  if (!TEACHER){ $("#modes").hidden = true; return; }
+  if (!TEACHER || SHARED){ $("#modes").hidden = true; return; }
   $("#modes").innerHTML = `<button type="button" data-mode="alumne" aria-pressed="${state.mode === "alumne"}">Alumnat</button><button type="button" data-mode="prof" aria-pressed="${state.mode === "prof"}">Professorat</button>`;
 }
 function renderTabs(){
-  const list = state.mode === "prof" ? state.draft.activitats : DATA.activitats;
+  const list = SRC().activitats;
   const nav = $("#acts");
   nav.hidden = list.length < 2 && state.mode !== "prof";
   nav.innerHTML = list.map(a => `<button type="button" data-act="${a.id}" aria-current="${a.id === state.actId}">${esc(a.title || "Sense títol")}</button>`).join("");
@@ -447,7 +611,7 @@ $("#modes").addEventListener("click", e => {
   stopAll();
   state.mode = b.dataset.mode;
   if (state.mode === "prof" && !state.draft) state.draft = clone(DATA);
-  if (state.mode === "alumne"){ if (!DATA.activitats.some(a => a.id === state.actId)) state.actId = DATA.activitats[0]?.id || null; state.game = null; state.voc = null; state.part = 1; }
+  if (state.mode === "alumne"){ if (!SRC().activitats.some(a => a.id === state.actId)) state.actId = SRC().activitats[0]?.id || null; state.game = null; state.voc = null; state.part = 1; }
   render(); window.scrollTo(0, 0);
 });
 $("#acts").addEventListener("click", e => {
@@ -455,13 +619,22 @@ $("#acts").addEventListener("click", e => {
   stopAll(); state.actId = b.dataset.act; state.game = null; state.voc = null; state.part = 1; render();
 });
 
-/* restore an unsaved draft after a reload (e.g. a save conflict) */
+/* teacher's own activities, kept in this browser */
 try {
-  const s = JSON.parse(sessionStorage.getItem("ea-draft") || "null");
-  if (TEACHER && s && s.d && Array.isArray(s.d.activitats)){ state.draft = s.d; state.actId = s.act; state.mode = "prof"; state.dirty = true; state.msg = "Hem recuperat canvis que no s'havien desat."; }
+  const s = JSON.parse(llegirLocal(K_DRAFT) || "null");
+  if (TEACHER && s && s.d && Array.isArray(s.d.activitats)){ state.draft = s.d; state.actId = s.act; }
 } catch (e) {}
-fetch("activitats.json", {cache: "no-store"}).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
-  .then(d => { if (Array.isArray(d.activitats)) DATA = d; })
+async function boot(){
+  const h = location.hash.match(/^#a=([\w-]+)/);
+  if (h){
+    try { const a = await unpackAct(h[1]); if (!a || !Array.isArray(a.items)) throw new Error("format"); DATA = {activitats: [a]}; SHARED = true; state.actId = a.id; return; }
+    catch (e){ toast("L'enllaç de l'activitat no és correcte o està incomplet."); }
+  }
+  const r = await fetch("activitats.json", {cache: "no-store"}); if (!r.ok) throw new Error(r.status); return r.json();
+}
+window.addEventListener("hashchange", () => location.reload());
+boot()
+  .then(d => { if (d && Array.isArray(d.activitats)) DATA = d; })
   .catch(() => { app.innerHTML = `<div class="head"><h1>No s'han pogut carregar les activitats</h1><p>Comprova que el fitxer activitats.json és a la mateixa carpeta que aquesta pàgina i que el JSON és vàlid.</p></div>`; })
-  .finally(() => { if (!state.actId || !DATA.activitats.some(a => a.id === state.actId)) state.actId = DATA.activitats[0]?.id || null; if (DATA.activitats.length || state.draft) render(); });
+  .finally(() => { if (SHARED) document.title = (DATA.activitats[0].title || "Activitat") + " · Rockin"; if (!state.actId || !SRC().activitats.some(a => a.id === state.actId)) state.actId = SRC().activitats[0]?.id || null; if (SRC().activitats.length) render(); });
 })();
