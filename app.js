@@ -627,7 +627,7 @@ footer{margin-top:12px;font-size:8pt;color:#777}
 <p class="sub">${on} · Idees sortides de l'activitat «${esc(a.title)}»</p>
 <ol>${L.map(x => { const ex = a.items.find(i => i.id === x.exemple); return `<li><h2>${esc(x.titol)}</h2>${x.desc ? `<p>${esc(x.desc)}</p>` : ""}${x.com ? `<p><b>Com provar-ho:</b> ${esc(x.com)}</p>` : ""}${ex && ex.title ? `<p><small>🎧 Exemple: ${esc(ex.title)}</small></p>` : ""}<div class="marques"><span>Ho hem provat</span><span>Ens agrada</span><span>Ho deixem</span></div></li>`; }).join("")}</ol>
 <div class="notes">Notes del grup: qui fa què, en quina part de la cançó, què hem canviat…</div>
-<footer>© Rockin SCCL · CC BY-SA 4.0 · rockin-cat.github.io/entrenament-auditiu</footer>
+<footer>© Rockin SCCL · CC BY-NC-SA 4.0 · rockin-cat.github.io/escolta-i-compon</footer>
 <script>window.addEventListener("load",()=>setTimeout(()=>window.print(),400));<\/script>
 </body></html>`;
   const w = window.open("", "_blank");
@@ -730,7 +730,7 @@ footer{margin-top:14px;font-size:8pt;color:#777;border-top:1px solid #ddd;paddin
 @media screen{body{max-width:190mm;margin:16px auto;padding:0 12px}}
 </style></head><body>
 ${cap}${escolta}${part1}${part2}${part3}
-<footer>© Rockin SCCL · CC BY-SA 4.0 · rockin-cat.github.io/entrenament-auditiu</footer>
+<footer>© Rockin SCCL · CC BY-NC-SA 4.0 · rockin-cat.github.io/escolta-i-compon</footer>
 <script>window.addEventListener("load",()=>setTimeout(()=>window.print(),400));<\/script>
 </body></html>`;
   const w = window.open("", "_blank");

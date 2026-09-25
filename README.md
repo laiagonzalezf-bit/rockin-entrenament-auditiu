@@ -1,9 +1,9 @@
-# Entrenament auditiu · Rockin
+# Escolta i compon · Rockin
 
 Activitat per relacionar fragments de cançons amb descripcions.
 
-- **Alumnat:** `https://rockin-cat.github.io/entrenament-auditiu/`
-- **Professorat:** `https://rockin-cat.github.io/entrenament-auditiu/?professorat`
+- **Alumnat:** `https://rockin-cat.github.io/escolta-i-compon/`
+- **Professorat:** `https://rockin-cat.github.io/escolta-i-compon/?professorat`
 
 ## Fitxers
 
